@@ -1,0 +1,76 @@
+<div class="login-wrapper">
+  <div class="login-card">
+    <div class="login-header">
+      <div class="brand-row">
+        <img src="/logo.png" alt="Healio Logo" class="brand-logo" style="width: 42px; height: 42px; object-fit: contain;" />
+        <h2 class="portal-brand">HEALIO</h2>
+      </div>
+      <p class="portal-tagline">Clinical & Patient Workspace</p>
+    </div>
+
+    <!-- Role Switcher -->
+    <div class="role-selector">
+      <button 
+        type="button"
+        class="role-btn" 
+        [class.active]="selectedRole === 'patient'"
+        (click)="setRole('patient')">
+        Patient Portal
+      </button>
+      <button 
+        type="button"
+        class="role-btn" 
+        [class.active]="selectedRole === 'doctor'"
+        (click)="setRole('doctor')">
+        Doctor / Staff
+      </button>
+    </div>
+
+    <form (ngSubmit)="onLogin()" class="login-form">
+      <div *ngIf="errorMessage" class="alert-box">
+        {{ errorMessage }}
+      </div>
+
+      <div class="form-group" *ngIf="selectedRole === 'doctor'">
+        <label for="doctorId">Doctor ID</label>
+        <input 
+          type="text" 
+          id="doctorId" 
+          [(ngModel)]="doctorId" 
+          name="doctorId" 
+          placeholder="e.g. DOC-12345"
+          required />
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email Address</label>
+        <input 
+          type="email" 
+          id="email" 
+          [(ngModel)]="email" 
+          name="email" 
+          placeholder="name@example.com"
+          required />
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input 
+          type="password" 
+          id="password" 
+          [(ngModel)]="password" 
+          name="password" 
+          placeholder="••••••••"
+          required />
+      </div>
+
+      <button type="submit" class="submit-btn" [disabled]="isLoading">
+        {{ isLoading ? 'Signing In...' : (selectedRole === 'doctor' ? 'Access Doctor Portal' : 'Sign In as Patient') }}
+      </button>
+    </form>
+
+    <div class="card-footer">
+      <a routerLink="/home" class="back-link">← Back to Home</a>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,245 @@
+:host {
+  display: block;
+  min-height: 100vh;
+  background-color: #f7faf9;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #1e293b;
+}
+
+.portal-wrapper {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 1.5rem 2rem 4rem;
+}
+
+.portal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 2rem;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.logo {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+}
+
+.brand h2 {
+  margin: 0;
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: #0E9F6E;
+}
+
+.subtext {
+  font-size: 0.88rem;
+  color: #64748b;
+}
+
+.header-nav {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.portal-switch {
+  color: #0E9F6E;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+.logout-btn {
+  color: #64748b;
+  text-decoration: none;
+  font-size: 0.92rem;
+  font-weight: 500;
+}
+
+.portal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.75rem 2rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.04);
+}
+
+.card h3 {
+  margin: 0 0 1.25rem;
+  font-size: 1.2rem;
+  color: #0f172a;
+}
+
+/* Form Styles */
+.registration-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
+  align-items: flex-end;
+}
+
+.form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.form-row label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.form-row input {
+  padding: 0.65rem 0.85rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.92rem;
+}
+
+.btn {
+  padding: 0.7rem 1.4rem;
+  border-radius: 6px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: background-color 0.2s;
+}
+
+.btn-save {
+  background-color: #0E9F6E;
+  color: #ffffff;
+}
+
+.btn-save:hover {
+  background-color: #0b7f58;
+}
+
+/* Timetable Grid */
+.table-container {
+  overflow-x: auto;
+  margin-bottom: 2rem;
+}
+
+.slot-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: center;
+}
+
+.slot-table th, .slot-table td {
+  border: 1px solid #e2e8f0;
+  padding: 0.75rem;
+  font-size: 0.88rem;
+}
+
+.slot-table th {
+  background-color: #f8fafc;
+  color: #334155;
+  font-weight: 700;
+}
+
+.time-col {
+  font-weight: 600;
+  background-color: #f8fafc;
+  color: #475569;
+  white-space: nowrap;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
+.badge-available {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.badge-booked {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+/* Booking Action Strip */
+.booking-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1.25rem;
+  background-color: #f8fafc;
+  padding: 1.25rem;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  flex: 1;
+  min-width: 180px;
+}
+
+.control-group label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.control-group select, .control-group input {
+  padding: 0.65rem 0.85rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.92rem;
+  background: white;
+}
+
+.btn-book {
+  background-color: #0E9F6E;
+  color: #ffffff;
+  padding: 0.7rem 1.75rem;
+}
+
+.btn-book:hover {
+  background-color: #0b7f58;
+}
+
+.alert-box {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.alert-success {
+  background-color: #d1fae5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.alert-error {
+  background-color: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}

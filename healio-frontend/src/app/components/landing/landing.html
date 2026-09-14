@@ -1,0 +1,87 @@
+<div class="landing-container">
+    <!-- Top Navigation -->
+    <header class="navbar">
+        <div class="nav-brand">
+            <img src="/logo.png" alt="Healio Logo" class="brand-logo-img" />
+            <span class="brand-name">HEALIO</span>
+        </div>
+
+        <nav class="nav-links">
+            <a href="#features">Capabilities</a>
+            <a href="#workflow">Workflows</a>
+            <a href="#compliance">HIPAA Compliance</a>
+        </nav>
+
+        <div class="nav-actions">
+            <button class="btn btn-login" (click)="goToLogin()">Login</button>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <main class="hero">
+        <div class="status-pill">
+            <span class="pulse-indicator"></span>
+            <span class="pill-text">EHR 3.0 PLATFORM LIVE</span>
+        </div>
+
+        <h1 class="hero-title">
+            Intelligent clinical records <br />
+            <span class="highlight-text">& real-time care flow.</span>
+        </h1>
+
+        <p class="hero-subtitle">
+            Eliminate scheduling logjams and fragmented charts. Healio connects real-time timetable slots, clinical
+            notes, and digital prescriptions in one high-integrity workspace.
+        </p>
+
+        <div class="hero-cta-group">
+            <button class="btn btn-primary btn-lg" (click)="navigateToLogin('patient')">
+                <svg class="cta-icon" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd"
+                        d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
+                        clip-rule="evenodd" />
+                </svg>
+                <span>Book Consultations</span>
+            </button>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="stats-strip">
+            <div class="stat-item">
+                <span class="stat-number">99.9%</span>
+                <span class="stat-label">Slot Booking Sync</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-item">
+                <span class="stat-number">&lt; 30s</span>
+                <span class="stat-label">Prescription Generation</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-item">
+                <span class="stat-number">100%</span>
+                <span class="stat-label">Role-Based RBAC</span>
+            </div>
+        </div>
+    </main>
+
+    <!-- Feature Grid -->
+    <section id="features" class="grid-section">
+        <div class="feature-card">
+            <h3>Real-Time Timetable Engine</h3>
+            <p>Synchronized weekly calendar grid tracking Available vs. Booked slots instantaneously. Zero
+                double-booking collisions.</p>
+        </div>
+
+        <div class="feature-card">
+            <h3>Clinical Consultations</h3>
+            <p>Comprehensive patient chart capture, diagnostic note histories, and medical event logging restricted
+                exclusively to licensed staff.</p>
+        </div>
+
+        <div class="feature-card">
+            <h3>Prescription Management</h3>
+            <p>Rapid multi-drug generation with structured dosage metrics, frequency tracking, and instantaneous patient
+                record dispatch.</p>
+        </div>
+    </section>
+</div>

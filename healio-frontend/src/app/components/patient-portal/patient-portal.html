@@ -1,0 +1,103 @@
+<div class="portal-wrapper">
+  <!-- Top Bar -->
+  <header class="portal-header">
+    <div class="brand">
+      <img src="/logo.png" alt="Healio" class="logo" />
+      <div>
+        <h2>Med-EHR Portal</h2>
+        <span class="subtext">Milestone 1: Patient Records & Scheduling</span>
+      </div>
+    </div>
+    <div class="header-nav">
+      <a routerLink="/doctor" class="portal-switch">Switch to Doctor Portal →</a>
+      <a routerLink="/home" class="logout-btn">Log Out</a>
+    </div>
+  </header>
+
+  <main class="portal-content">
+    <!-- Patient Registration Card -->
+    <section class="card registration-card">
+      <h3>Patient Registration</h3>
+      <form (ngSubmit)="registerPatient()" class="registration-form">
+        <div class="form-row">
+          <label>Full Name:</label>
+          <input type="text" [(ngModel)]="newPatient.name" name="name" placeholder="John Doe" required />
+        </div>
+        <div class="form-row">
+          <label>Contact Phone:</label>
+          <input type="tel" [(ngModel)]="newPatient.phone" name="phone" placeholder="123-456-7230" required />
+        </div>
+        <div class="form-row">
+          <label>Contact Email:</label>
+          <input type="email" [(ngModel)]="newPatient.email" name="email" placeholder="johndoe@gmail.com" required />
+        </div>
+        <div class="form-row">
+          <label>Date of Birth:</label>
+          <input type="date" [(ngModel)]="newPatient.dob" name="dob" required />
+        </div>
+        <button type="submit" class="btn btn-save">Register Patient</button>
+      </form>
+    </section>
+
+    <!-- Appointment Slot Management -->
+    <section class="card slot-card">
+      <h3>Appointment Slot Management</h3>
+
+      <div class="table-container">
+        <table class="slot-table">
+          <thead>
+            <tr>
+              <th>Time Slot</th>
+              <th *ngFor="let day of days">{{ day }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let time of timeSlots">
+              <td class="time-col">{{ time }}</td>
+              <td *ngFor="let day of days" class="status-cell">
+                <ng-container *ngIf="getSlot(day, time) as slot">
+                  <span [class]="'badge badge-' + slot.status.toLowerCase()">
+                    {{ slot.status }}
+                  </span>
+                </ng-container>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Booking Actions Matching Wireframe -->
+      <div class="booking-strip">
+        <div class="control-group">
+          <label>Select Patient ID:</label>
+          <select [(ngModel)]="selectedPatientId">
+            <option *ngFor="let p of registeredPatients" [value]="p.id">
+              {{ p.id }} ({{ p.name }})
+            </option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label>Doctor ID:</label>
+          <input type="text" [(ngModel)]="doctorId" readonly />
+        </div>
+
+        <div class="control-group">
+          <label>Available Slot:</label>
+          <select [(ngModel)]="selectedSlotId">
+            <option value="" disabled selected>-- Select an Available Slot --</option>
+            <option *ngFor="let s of availableSlots" [value]="s.id">
+              {{ s.day }} - {{ s.time }}
+            </option>
+          </select>
+        </div>
+
+        <button class="btn btn-book" (click)="bookSelectedSlot()">Book Slot</button>
+      </div>
+
+      <div *ngIf="bookingMessage" [class]="'alert-box ' + (bookingSuccess ? 'alert-success' : 'alert-error')">
+        {{ bookingMessage }}
+      </div>
+    </section>
+  </main>
+</div>
