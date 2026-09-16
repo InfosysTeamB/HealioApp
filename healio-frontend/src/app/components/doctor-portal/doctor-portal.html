@@ -1,0 +1,309 @@
+<div class="portal-wrapper">
+  <!-- Portal Header -->
+  <header class="portal-header">
+    <div class="brand">
+      <img src="/logo.png" alt="Healio" class="logo" />
+      <div>
+        <h2 class="portal-title">Doctor Workspace</h2>
+        <div class="physician-meta-line">
+          <span class="physician-name">{{ doctorData?.doctor?.name || 'Dr. Kim' }}</span>
+          <span class="physician-badge">{{ doctorId }}</span>
+          <span class="specialization-tag">{{ doctorData?.doctor?.specialization || 'Clinical Specialist' }}</span>
+        </div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="btn-refresh" (click)="loadDoctorPortalData()" [disabled]="isLoading" title="Refresh portal data">
+        <svg class="icon-refresh" [class.spin]="isLoading" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+        </svg>
+        <span>{{ isLoading ? 'Syncing...' : 'Refresh' }}</span>
+      </button>
+      <button type="button" class="logout-btn" (click)="logout()">Sign Out</button>
+    </div>
+  </header>
+
+  <!-- Error Alert Banner -->
+  <div *ngIf="loadError" class="alert-banner">
+    <span>{{ loadError }}</span>
+    <button type="button" class="btn-retry" (click)="loadDoctorPortalData()">Retry</button>
+  </div>
+
+  <!-- Quick Metrics KPI Row -->
+  <section class="metrics-grid">
+    <div class="metric-card">
+      <div class="metric-icon icon-patients">👥</div>
+      <div class="metric-content">
+        <span class="metric-value">{{ doctorData?.stats?.total_patients ?? patients.length ?? 0 }}</span>
+        <span class="metric-label">Total Patients</span>
+      </div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-icon icon-appointments">📅</div>
+      <div class="metric-content">
+        <span class="metric-value">{{ doctorData?.stats?.today_appointments ?? 0 }}</span>
+        <span class="metric-label">Booked Appointments</span>
+      </div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-icon icon-reviews">📝</div>
+      <div class="metric-content">
+        <span class="metric-value">{{ doctorData?.stats?.pending_reviews ?? 0 }}</span>
+        <span class="metric-label">Pending Reviews</span>
+      </div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-icon icon-rx">💊</div>
+      <div class="metric-content">
+        <span class="metric-value">{{ doctorData?.stats?.prescriptions_issued ?? prescriptions.length ?? 0 }}</span>
+        <span class="metric-label">Prescriptions Issued</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Workspace View Switcher -->
+  <nav class="workspace-nav">
+    <button 
+      type="button" 
+      class="nav-tab" 
+      [class.active]="activeWorkspaceView === 'clinical'" 
+      (click)="activeWorkspaceView = 'clinical'">
+      <span>📋 Clinical Charting & Prescriptions</span>
+    </button>
+    <button 
+      type="button" 
+      class="nav-tab" 
+      [class.active]="activeWorkspaceView === 'timetable'" 
+      (click)="activeWorkspaceView = 'timetable'">
+      <span>🗓️ 5-Day Weekly Slot Timetable ({{ slots.length }})</span>
+    </button>
+  </nav>
+
+  <!-- VIEW 1: CLINICAL CHARTING & PATIENT HISTORY -->
+  <div *ngIf="activeWorkspaceView === 'clinical'">
+    <!-- Today's Appointment Roster Strip -->
+    <section class="roster-strip" *ngIf="doctorData?.roster && doctorData!.roster.length > 0">
+      <div class="roster-header">
+        <h4 class="roster-title">⚡ Today's Appointment Roster</h4>
+        <span class="roster-count">{{ doctorData!.roster.length }} Scheduled</span>
+      </div>
+      <div class="roster-chips">
+        <div 
+          *ngFor="let item of doctorData!.roster" 
+          class="roster-chip"
+          [class.active]="item.patient === selectedPatientId"
+          (click)="selectRosterSlot(item)">
+          <span class="chip-day">{{ item.day }} • {{ item.time_slot }}</span>
+          <strong class="chip-name">{{ item.patient_name || item.patient }}</strong>
+          <span class="chip-pid">{{ item.patient }}</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Patient Selection Header Bar -->
+    <section class="patient-selector-card">
+      <div class="selector-group">
+        <label for="patientSearch">Filter Roster:</label>
+        <input 
+          id="patientSearch" 
+          type="text" 
+          [(ngModel)]="searchTerm" 
+          placeholder="Filter by Name or PID (e.g. P-001)..." 
+          class="patient-search-input" />
+      </div>
+
+      <div class="selector-group flex-2">
+        <label for="patientSelect">Active Patient Record:</label>
+        <select id="patientSelect" [(ngModel)]="selectedPatientId" (change)="onPatientChange()" class="patient-select">
+          <option *ngFor="let p of filteredPatients" [value]="p.patient_id">
+            {{ p.patient_id }} — {{ p.full_name }} (DOB: {{ p.date_of_birth }})
+          </option>
+        </select>
+      </div>
+
+      <!-- Active Patient Quick Medical Badge -->
+      <div class="patient-quick-badge" *ngIf="activePatient?.profile">
+        <span class="badge-tag">Blood: <strong>{{ activePatient?.profile?.blood_group }}</strong></span>
+        <span class="badge-tag">Allergies: <strong>{{ activePatient?.profile?.allergies || 'None' }}</strong></span>
+        <span class="badge-tag">Conditions: <strong>{{ activePatient?.profile?.chronic_conditions || 'None' }}</strong></span>
+      </div>
+    </section>
+
+    <main class="portal-dashboard">
+      <!-- Left Column: Entry Forms -->
+      <section class="forms-column">
+        <div class="card form-card">
+          <div class="tab-header">
+            <button 
+              class="tab-btn" 
+              [class.active]="activeTab === 'consultations'" 
+              (click)="activeTab = 'consultations'">
+              Record Consultation
+            </button>
+            <button 
+              class="tab-btn" 
+              [class.active]="activeTab === 'prescriptions'" 
+              (click)="activeTab = 'prescriptions'">
+              Issue Prescription
+            </button>
+          </div>
+
+          <!-- Consultation Form -->
+          <form *ngIf="activeTab === 'consultations'" (ngSubmit)="saveConsultation()" class="entry-form">
+            <div class="form-group">
+              <label>Chief Complaint *</label>
+              <input type="text" [(ngModel)]="newConsultation.chief_complaint" name="chief_complaint" placeholder="e.g. Persistent migraine for 3 days" required />
+            </div>
+
+            <div class="form-group">
+              <label>Diagnosis *</label>
+              <input type="text" [(ngModel)]="newConsultation.diagnosis" name="diagnosis" placeholder="e.g. Acute tension headache" required />
+            </div>
+
+            <div class="form-group">
+              <label>Clinical Notes & Recommendations</label>
+              <textarea rows="4" [(ngModel)]="newConsultation.clinical_notes" name="clinical_notes" placeholder="Observations, vital signs, follow-up schedule..."></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-save">Save Consultation Record</button>
+          </form>
+
+          <!-- Prescription Form -->
+          <form *ngIf="activeTab === 'prescriptions'" (ngSubmit)="savePrescription()" class="entry-form">
+            <div class="form-group">
+              <label>Medication Name *</label>
+              <input type="text" [(ngModel)]="newPrescription.medication_name" name="medication_name" placeholder="e.g. Amoxicillin 500mg" required />
+            </div>
+
+            <div class="form-row-2">
+              <div class="form-group">
+                <label>Dosage *</label>
+                <input type="text" [(ngModel)]="newPrescription.dosage" name="dosage" placeholder="e.g. 500mg" required />
+              </div>
+              <div class="form-group">
+                <label>Duration (Days) *</label>
+                <input type="number" [(ngModel)]="newPrescription.duration_days" name="duration_days" min="1" required />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Frequency & Administration Instructions *</label>
+              <input type="text" [(ngModel)]="newPrescription.frequency" name="frequency" placeholder="e.g. 1 tablet every 8 hours after meals" required />
+            </div>
+
+            <button type="submit" class="btn btn-save">Authorize & Issue Prescription</button>
+          </form>
+        </div>
+      </section>
+
+      <!-- Right Column: Patient History Timeline -->
+      <section class="history-column">
+        <div class="card history-card">
+          <div class="card-header-row">
+            <h3>Patient Clinical Records ({{ selectedPatientId }})</h3>
+            <span class="patient-sub">{{ activePatient?.full_name }}</span>
+          </div>
+
+          <div class="history-section">
+            <h4>Consultation Records</h4>
+            <div *ngIf="consultations.length === 0" class="empty-state">No prior consultations recorded for this patient.</div>
+            <div class="timeline-list">
+              <div *ngFor="let c of consultations" class="timeline-item">
+                <div class="timeline-meta">
+                  <span class="date">{{ c.consultation_date | date:'mediumDate' }}</span>
+                  <span class="badge badge-doc">{{ c.doctor_id }}</span>
+                </div>
+                <p class="complaint"><strong>Complaint:</strong> {{ c.chief_complaint }}</p>
+                <p class="diagnosis"><strong>Diagnosis:</strong> {{ c.diagnosis }}</p>
+                <p *ngIf="c.clinical_notes" class="notes"><em>{{ c.clinical_notes }}</em></p>
+              </div>
+            </div>
+          </div>
+
+          <div class="history-section">
+            <h4>Prescriptions Dispatched</h4>
+            <div *ngIf="prescriptions.length === 0" class="empty-state">No active prescriptions issued for this patient.</div>
+            <div class="rx-list">
+              <div *ngFor="let rx of prescriptions" class="rx-item">
+                <div class="rx-title">
+                  <strong>{{ rx.medication_name }}</strong> — {{ rx.dosage }}
+                </div>
+                <div class="rx-details">
+                  {{ rx.frequency }} (Duration: {{ rx.duration_days }} days)
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- VIEW 2: 5-DAY WEEKLY APPOINTMENT SLOT TIMETABLE -->
+  <div *ngIf="activeWorkspaceView === 'timetable'" class="timetable-view">
+    <div class="timetable-filter-bar">
+      <div class="filter-label">Filter by Day:</div>
+      <div class="filter-pills">
+        <button 
+          type="button" 
+          class="pill-btn" 
+          [class.active]="selectedDayFilter === 'All'" 
+          (click)="selectedDayFilter = 'All'">
+          All (5 Days)
+        </button>
+        <button 
+          *ngFor="let day of days" 
+          type="button" 
+          class="pill-btn" 
+          [class.active]="selectedDayFilter === day" 
+          (click)="selectedDayFilter = day">
+          {{ day }}
+        </button>
+      </div>
+      <div class="timetable-stat">
+        Showing <strong>{{ filteredSlots.length }}</strong> slots
+      </div>
+    </div>
+
+    <div class="slots-grid">
+      <div 
+        *ngFor="let slot of filteredSlots" 
+        class="slot-card" 
+        [class.is-booked]="slot.status === 'Booked'"
+        [class.is-available]="slot.status === 'Available'">
+        <div class="slot-top">
+          <span class="slot-day">{{ slot.day }}</span>
+          <span class="slot-status" [class.status-booked]="slot.status === 'Booked'" [class.status-available]="slot.status === 'Available'">
+            {{ slot.status }}
+          </span>
+        </div>
+        <div class="slot-time">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+          </svg>
+          <span>{{ slot.time_slot }}</span>
+        </div>
+
+        <div class="slot-patient-info" *ngIf="slot.status === 'Booked'">
+          <div class="patient-line">
+            <strong>Patient:</strong> {{ slot.patient_name || 'Patient ' + slot.patient }}
+          </div>
+          <div class="pid-line">
+            <span class="pid-badge">PID: {{ slot.patient }}</span>
+            <span *ngIf="slot.patient_phone" class="phone-tag">📞 {{ slot.patient_phone }}</span>
+          </div>
+          <button type="button" class="btn-open-chart" (click)="selectRosterSlot(slot)">
+            Open Clinical Record →
+          </button>
+        </div>
+
+        <div class="slot-empty-info" *ngIf="slot.status === 'Available'">
+          <span>Available for Patient Booking</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

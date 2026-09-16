@@ -1,23 +1,15 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-
-interface Slot {
-  id: string;
-  day: string;
-  time: string;
-  status: 'Available' | 'Booked';
-  patientId?: string;
-}
-
-interface Patient {
-  id: string;
-  name: string;
-  phone: string;
-  email: string;
-  dob: string;
-}
+import { 
+  ClinicalService, 
+  Patient, 
+  AppointmentSlot, 
+  Consultation, 
+  Prescription 
+} from '../../services/clinical.service';
+import { AuthService, UserSession } from '../../services/auth.service';
 
 @Component({
   selector: 'app-patient-portal',
@@ -26,28 +18,20 @@ interface Patient {
   templateUrl: './patient-portal.html',
   styleUrls: ['./patient-portal.css']
 })
-export class PatientPortalComponent {
-  // Registration form model
-  newPatient: Patient = {
-    id: 'P-001',
-    name: '',
-    phone: '',
-    email: '',
-    dob: ''
-  };
+export class PatientPortalComponent implements OnInit {
+  currentUser: UserSession | null = null;
+  patientId: string = '';
+  currentPatient: Patient | null = null;
 
-  registeredPatients: Patient[] = [
-    { id: 'P-001', name: 'John Doe', phone: '123-456-7230', email: 'johndoe@gmail.com', dob: '1998-07-05' }
-  ];
+  slots: AppointmentSlot[] = [];
+  patientPrescriptions: Prescription[] = [];
+  patientConsultations: Consultation[] = [];
 
-  // Booking controls
-  selectedPatientId: string = 'P-001';
   doctorId: string = '12345';
-  selectedSlotId: string = '';
+  selectedSlotId: number | null = null;
   bookingMessage: string = '';
   bookingSuccess: boolean = false;
 
-  // Days and timetable matrix
   days: string[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
   timeSlots: string[] = [
     '09:00 AM - 10:00 AM',
@@ -57,82 +41,145 @@ export class PatientPortalComponent {
     '01:00 PM - 02:00 PM'
   ];
 
-  // Slot states matching Milestone 1 wireframe
-  slots: Slot[] = [
-    { id: 'm1', day: 'Monday', time: '09:00 AM - 10:00 AM', status: 'Available' },
-    { id: 'm2', day: 'Monday', time: '10:00 AM - 11:00 AM', status: 'Available' },
-    { id: 'm3', day: 'Monday', time: '11:00 AM - 12:00 PM', status: 'Available' },
-    { id: 'm4', day: 'Monday', time: '12:00 PM - 01:00 PM', status: 'Available' },
-    { id: 'm5', day: 'Monday', time: '01:00 PM - 02:00 PM', status: 'Booked', patientId: 'P-001' },
+  constructor(
+    private clinicalService: ClinicalService,
+    private authService: AuthService,
+    private cdr: ChangeDetectorRef
+  ) {}
 
-    { id: 't1', day: 'Tuesday', time: '09:00 AM - 10:00 AM', status: 'Available' },
-    { id: 't2', day: 'Tuesday', time: '10:00 AM - 11:00 AM', status: 'Booked', patientId: 'P-001' },
-    { id: 't3', day: 'Tuesday', time: '11:00 AM - 12:00 PM', status: 'Available' },
-    { id: 't4', day: 'Tuesday', time: '12:00 PM - 01:00 PM', status: 'Available' },
-    { id: 't5', day: 'Tuesday', time: '01:00 PM - 02:00 PM', status: 'Available' },
-
-    { id: 'w1', day: 'Wednesday', time: '09:00 AM - 10:00 AM', status: 'Available' },
-    { id: 'w2', day: 'Wednesday', time: '10:00 AM - 11:00 AM', status: 'Available' },
-    { id: 'w3', day: 'Wednesday', time: '11:00 AM - 12:00 PM', status: 'Booked', patientId: 'P-001' },
-    { id: 'w4', day: 'Wednesday', time: '12:00 PM - 01:00 PM', status: 'Available' },
-    { id: 'w5', day: 'Wednesday', time: '01:00 PM - 02:00 PM', status: 'Available' },
-
-    { id: 'th1', day: 'Thursday', time: '09:00 AM - 10:00 AM', status: 'Available' },
-    { id: 'th2', day: 'Thursday', time: '10:00 AM - 11:00 AM', status: 'Booked', patientId: 'P-001' },
-    { id: 'th3', day: 'Thursday', time: '11:00 AM - 12:00 PM', status: 'Booked', patientId: 'P-001' },
-    { id: 'th4', day: 'Thursday', time: '12:00 PM - 01:00 PM', status: 'Booked', patientId: 'P-001' },
-    { id: 'th5', day: 'Thursday', time: '01:00 PM - 02:00 PM', status: 'Booked', patientId: 'P-001' },
-
-    { id: 'f1', day: 'Friday', time: '09:00 AM - 10:00 AM', status: 'Available' },
-    { id: 'f2', day: 'Friday', time: '10:00 AM - 11:00 AM', status: 'Booked', patientId: 'P-001' },
-    { id: 'f3', day: 'Friday', time: '11:00 AM - 12:00 PM', status: 'Booked', patientId: 'P-001' },
-    { id: 'f4', day: 'Friday', time: '12:00 PM - 01:00 PM', status: 'Booked', patientId: 'P-001' },
-    { id: 'f5', day: 'Friday', time: '01:00 PM - 02:00 PM', status: 'Booked', patientId: 'P-001' },
-  ];
-
-  get availableSlots(): Slot[] {
-    return this.slots.filter(s => s.status === 'Available');
-  }
-
-  getSlot(day: string, time: string): Slot | undefined {
-    return this.slots.find(s => s.day === day && s.time === time);
-  }
-
-  registerPatient(): void {
-    if (!this.newPatient.name || !this.newPatient.phone || !this.newPatient.email) {
-      alert('Please complete all patient registration fields.');
-      return;
+  ngOnInit(): void {
+    this.currentUser = this.authService.getUser();
+    
+    if (this.currentUser?.patient_id) {
+      this.patientId = this.currentUser.patient_id;
     }
 
-    const nextId = `P-00${this.registeredPatients.length + 1}`;
-    const patientToAdd: Patient = { ...this.newPatient, id: nextId };
-    this.registeredPatients.push(patientToAdd);
-    this.selectedPatientId = patientToAdd.id;
+    // Immediately trigger fetchSlots() to populate the grid without delay
+    this.fetchSlots();
+    this.fetchPatientRecord();
+  }
 
-    this.newPatient = {
-      id: `P-00${this.registeredPatients.length + 1}`,
-      name: '',
-      phone: '',
-      email: '',
-      dob: ''
-    };
-    alert(`Patient ${patientToAdd.name} registered with ID: ${patientToAdd.id}`);
+  fetchSlots(): void {
+    this.clinicalService.getSlots().subscribe({
+      next: (data: AppointmentSlot[]) => {
+        this.slots = [...data];
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => console.error('Failed to load appointment slots', err)
+    });
+  }
+
+  fetchPatientRecord(): void {
+    this.clinicalService.getPatients().subscribe({
+      next: (patients: Patient[]) => {
+        if (this.patientId) {
+          const match = patients.find((p) => p.patient_id === this.patientId);
+          if (match) {
+            this.currentPatient = match;
+            this.loadClinicalHistory();
+            this.cdr.detectChanges();
+            return;
+          }
+        }
+        
+        if (this.currentUser?.email) {
+          const matchByEmail = patients.find(
+            (p) => p.contact_email.toLowerCase() === this.currentUser?.email?.toLowerCase()
+          );
+          if (matchByEmail && matchByEmail.patient_id) {
+            this.patientId = matchByEmail.patient_id;
+            this.currentPatient = matchByEmail;
+            this.authService.updatePatientId(this.patientId);
+            this.loadClinicalHistory();
+            this.cdr.detectChanges();
+            return;
+          }
+        }
+      },
+      error: (err: any) => console.error('Failed to load patient records', err)
+    });
+  }
+
+  loadClinicalHistory(): void {
+    if (!this.patientId) return;
+
+    this.clinicalService.getPrescriptions(this.patientId).subscribe({
+      next: (data: Prescription[]) => {
+        this.patientPrescriptions = [...data];
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => console.error(err)
+    });
+
+    this.clinicalService.getConsultations(this.patientId).subscribe({
+      next: (data: Consultation[]) => {
+        this.patientConsultations = [...data];
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => console.error(err)
+    });
+  }
+
+  get availableSlots(): AppointmentSlot[] {
+    return this.slots.filter((s) => s.status === 'Available');
+  }
+
+  get bookedSlotsForPatient(): AppointmentSlot[] {
+    if (!this.patientId) return [];
+    return this.slots.filter((s) => s.status === 'Booked' && s.patient === this.patientId);
+  }
+
+  getSlot(day: string, time: string): AppointmentSlot | undefined {
+    return this.slots.find((s) => s.day === day && s.time_slot === time);
   }
 
   bookSelectedSlot(): void {
-    if (!this.selectedSlotId) {
-      this.bookingMessage = 'Please choose an available slot.';
+    if (!this.patientId) {
+      this.bookingMessage = 'Please ensure you are signed in with an active patient ID.';
       this.bookingSuccess = false;
       return;
     }
 
-    const slot = this.slots.find(s => s.id === this.selectedSlotId);
-    if (slot && slot.status === 'Available') {
-      slot.status = 'Booked';
-      slot.patientId = this.selectedPatientId;
-      this.bookingSuccess = true;
-      this.bookingMessage = `Slot confirmed: ${slot.day} at ${slot.time} for Patient ${this.selectedPatientId}!`;
-      this.selectedSlotId = '';
+    if (!this.selectedSlotId) {
+      this.bookingMessage = 'Please select an available appointment slot.';
+      this.bookingSuccess = false;
+      return;
     }
+
+    this.clinicalService.bookSlot(this.selectedSlotId, this.patientId).subscribe({
+      next: (updatedSlot: AppointmentSlot) => {
+        this.slots = this.slots.map((s) => (s.id === updatedSlot.id ? updatedSlot : s));
+        this.bookingSuccess = true;
+        this.bookingMessage = `Confirmed: ${updatedSlot.day} (${updatedSlot.time_slot}) reserved for ${this.patientId}`;
+        this.selectedSlotId = null;
+        this.cdr.detectChanges();
+        setTimeout(() => (this.bookingMessage = ''), 4000);
+      },
+      error: (err: any) => {
+        this.bookingSuccess = false;
+        this.bookingMessage = err.error?.error || 'Failed to book slot.';
+      }
+    });
+  }
+
+  cancelAppointment(slotId: number): void {
+    if (!confirm('Cancel this appointment? The slot will be returned to Available.')) return;
+
+    this.clinicalService.cancelSlot(slotId, this.patientId).subscribe({
+      next: (releasedSlot: AppointmentSlot) => {
+        this.slots = this.slots.map((s) =>
+          s.id === releasedSlot.id ? { ...releasedSlot, patient: null, status: 'Available' } : s
+        );
+        this.bookingSuccess = true;
+        this.bookingMessage = `Appointment cancelled. Slot restored.`;
+        this.cdr.detectChanges();
+        setTimeout(() => (this.bookingMessage = ''), 4000);
+      },
+      error: (err: any) => alert('Cancellation failed: ' + JSON.stringify(err.error))
+    });
+  }
+
+  printPrescriptionSlip(): void {
+    window.print();
   }
 }

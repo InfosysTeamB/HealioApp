@@ -1,48 +1,69 @@
 <div class="portal-wrapper">
-  <!-- Top Bar -->
+  <!-- Minimalist Header -->
   <header class="portal-header">
     <div class="brand">
       <img src="/logo.png" alt="Healio" class="logo" />
-      <div>
-        <h2>Med-EHR Portal</h2>
-        <span class="subtext">Milestone 1: Patient Records & Scheduling</span>
-      </div>
+      <h2 class="portal-title">Patient Portal</h2>
     </div>
-    <div class="header-nav">
-      <a routerLink="/doctor" class="portal-switch">Switch to Doctor Portal →</a>
+
+    <div class="header-action-area">
+      <span class="portal-role-pill">Patient Workspace</span>
       <a routerLink="/home" class="logout-btn">Log Out</a>
     </div>
   </header>
 
+  <!-- Clean, Compact Patient Context Banner -->
+  <section class="patient-identity-banner">
+    <div class="identity-profile-left">
+      <div class="avatar-badge">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+      </div>
+      <div class="identity-details">
+        <div class="identity-name-line">
+          <h3 class="patient-display-name">
+            {{ currentPatient?.full_name || currentUser?.name || 'Active Patient' }}
+          </h3>
+          <span class="clinical-pid-chip">PID: {{ patientId || 'P-001' }}</span>
+          <span class="info-badge blood-badge">Blood: {{ currentPatient?.profile?.blood_group || 'O+' }}</span>
+          <span class="info-badge allergy-badge">Allergies: {{ currentPatient?.profile?.allergies || 'None reported' }}</span>
+        </div>
+        <p class="patient-contact-sub">
+          <span *ngIf="currentPatient?.contact_email || currentUser?.email">
+            {{ currentPatient?.contact_email || currentUser?.email }}
+          </span>
+          <span class="sub-sep" *ngIf="currentPatient?.contact_phone">•</span>
+          <span *ngIf="currentPatient?.contact_phone">{{ currentPatient?.contact_phone }}</span>
+          <span class="sub-sep" *ngIf="currentPatient?.profile?.emergency_contact_phone">•</span>
+          <span *ngIf="currentPatient?.profile?.emergency_contact_phone">
+            Emergency: {{ currentPatient?.profile?.emergency_contact_name }} ({{ currentPatient?.profile?.emergency_contact_phone }})
+          </span>
+        </p>
+      </div>
+    </div>
+
+    <div class="identity-status-right">
+      <span class="status-pill registered">
+        <span class="status-indicator-dot"></span>
+        Verified Clinical Profile
+      </span>
+    </div>
+  </section>
+
   <main class="portal-content">
-    <!-- Patient Registration Card -->
-    <section class="card registration-card">
-      <h3>Patient Registration</h3>
-      <form (ngSubmit)="registerPatient()" class="registration-form">
-        <div class="form-row">
-          <label>Full Name:</label>
-          <input type="text" [(ngModel)]="newPatient.name" name="name" placeholder="John Doe" required />
+    <!-- PRIMARY HERO CARD: WEEKLY APPOINTMENT TIMETABLE -->
+    <section class="card slot-card hero-card">
+      <div class="card-title-row">
+        <div>
+          <h3>Weekly Consultation Timetable & Appointment Booking</h3>
+          <p class="card-subtext">Live synchronized with clinical scheduling database in PostgreSQL</p>
         </div>
-        <div class="form-row">
-          <label>Contact Phone:</label>
-          <input type="tel" [(ngModel)]="newPatient.phone" name="phone" placeholder="123-456-7230" required />
-        </div>
-        <div class="form-row">
-          <label>Contact Email:</label>
-          <input type="email" [(ngModel)]="newPatient.email" name="email" placeholder="johndoe@gmail.com" required />
-        </div>
-        <div class="form-row">
-          <label>Date of Birth:</label>
-          <input type="date" [(ngModel)]="newPatient.dob" name="dob" required />
-        </div>
-        <button type="submit" class="btn btn-save">Register Patient</button>
-      </form>
-    </section>
+        <span class="live-pill">Live Synced</span>
+      </div>
 
-    <!-- Appointment Slot Management -->
-    <section class="card slot-card">
-      <h3>Appointment Slot Management</h3>
-
+      <!-- Weekly Schedule Grid -->
       <div class="table-container">
         <table class="slot-table">
           <thead>
@@ -66,28 +87,24 @@
         </table>
       </div>
 
-      <!-- Booking Actions Matching Wireframe -->
+      <!-- Booking Strip -->
       <div class="booking-strip">
         <div class="control-group">
-          <label>Select Patient ID:</label>
-          <select [(ngModel)]="selectedPatientId">
-            <option *ngFor="let p of registeredPatients" [value]="p.id">
-              {{ p.id }} ({{ p.name }})
-            </option>
-          </select>
+          <label>Your Patient ID:</label>
+          <input type="text" [value]="patientId || 'P-001'" readonly class="input-readonly highlight-pid" />
         </div>
 
         <div class="control-group">
           <label>Doctor ID:</label>
-          <input type="text" [(ngModel)]="doctorId" readonly />
+          <input type="text" [(ngModel)]="doctorId" readonly class="input-readonly" />
         </div>
 
-        <div class="control-group">
+        <div class="control-group flex-2">
           <label>Available Slot:</label>
-          <select [(ngModel)]="selectedSlotId">
-            <option value="" disabled selected>-- Select an Available Slot --</option>
-            <option *ngFor="let s of availableSlots" [value]="s.id">
-              {{ s.day }} - {{ s.time }}
+          <select class="styled-select" [(ngModel)]="selectedSlotId">
+            <option [ngValue]="null" disabled>-- Choose Available Slot --</option>
+            <option *ngFor="let s of availableSlots" [ngValue]="s.id">
+              {{ s.day }} ({{ s.time_slot }})
             </option>
           </select>
         </div>
@@ -97,6 +114,56 @@
 
       <div *ngIf="bookingMessage" [class]="'alert-box ' + (bookingSuccess ? 'alert-success' : 'alert-error')">
         {{ bookingMessage }}
+      </div>
+
+      <!-- Confirmed Bookings for This Patient & Single-Click Cancellation -->
+      <div class="active-bookings-tray" *ngIf="bookedSlotsForPatient.length > 0">
+        <h4>My Confirmed Bookings:</h4>
+        <div class="chips-container">
+          <div *ngFor="let s of bookedSlotsForPatient" class="booking-chip">
+            <div class="chip-text">
+              <strong>{{ s.day }}</strong> at <span>{{ s.time_slot }}</span> (Doctor: {{ s.doctor_id }})
+            </div>
+            <button class="btn-cancel" (click)="cancelAppointment(s.id)">Cancel Booking</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECONDARY CARD: MEDICAL HISTORY & PRESCRIPTIONS -->
+    <section class="card history-card" *ngIf="patientPrescriptions.length > 0 || patientConsultations.length > 0">
+      <div class="card-title-row">
+        <div>
+          <h3>My Clinical Records & Prescriptions</h3>
+          <p class="card-subtext">Authorized doctor consultations and digital prescription records</p>
+        </div>
+        <button class="btn-print" (click)="printPrescriptionSlip()">Print Prescriptions</button>
+      </div>
+
+      <div class="history-grid">
+        <div class="history-col" *ngIf="patientPrescriptions.length > 0">
+          <h4>Issued Prescriptions</h4>
+          <div class="rx-stack">
+            <div *ngFor="let rx of patientPrescriptions" class="rx-card">
+              <div class="rx-title">
+                <strong>{{ rx.medication_name }}</strong>
+                <span class="badge-dosage">{{ rx.dosage }}</span>
+              </div>
+              <p>{{ rx.frequency }} ({{ rx.duration_days }} days)</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="history-col" *ngIf="patientConsultations.length > 0">
+          <h4>Consultation Records</h4>
+          <div class="consultation-stack">
+            <div *ngFor="let c of patientConsultations" class="consult-item">
+              <div class="consult-meta">{{ c.consultation_date | date:'mediumDate' }} | {{ c.doctor_id }}</div>
+              <p><strong>Complaint:</strong> {{ c.chief_complaint }}</p>
+              <p><strong>Diagnosis:</strong> {{ c.diagnosis }}</p>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   </main>

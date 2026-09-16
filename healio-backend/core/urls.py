@@ -1,26 +1,38 @@
-"""
-URL configuration for core project.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/6.1/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
 from django.contrib import admin
 from django.urls import path
-from clinical.views import PatientListCreateView, SlotListView, BookSlotView
+from clinical.views import (
+    PatientListCreateView,
+    PatientUserRegistrationView,
+    SlotListView,
+    BookSlotView,
+    CancelSlotView,
+    ConsultationListCreateView,
+    PrescriptionListCreateView,
+    LoginView,
+    GoogleLoginView,
+    AuditLogListView,
+    NotificationStatusView,
+    ApiEndpointCatalogView,
+    DoctorDashboardSummaryView,
+    DoctorUserRegistrationView
+)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/patients/', PatientListCreateView.as_view()),
-    path('api/slots/', SlotListView.as_view()),
-    path('api/slots/book/', BookSlotView.as_view()),
+    path('api/v1/login/', LoginView.as_view()),
+    path('api/v1/auth/google/', GoogleLoginView.as_view()),
+    path('api/v1/patients/', PatientListCreateView.as_view()),
+    path('api/v1/patients/register-user/', PatientUserRegistrationView.as_view()),
+    path('api/v1/appointments/', SlotListView.as_view()),
+    path('api/v1/appointments/book/', BookSlotView.as_view()),
+    path('api/v1/appointments/cancel/', CancelSlotView.as_view()),
+    path('api/v1/consultations/', ConsultationListCreateView.as_view()),
+    path('api/v1/prescriptions/', PrescriptionListCreateView.as_view()),
+    path('api/v1/doctor/dashboard-summary/', DoctorDashboardSummaryView.as_view()),
+    path('api/v1/doctor/slots/', SlotListView.as_view()),
+    path('api/v1/doctors/register-user/', DoctorUserRegistrationView.as_view()),
+    path('api/v1/doctor/register/', DoctorUserRegistrationView.as_view()),
+    path('api/v1/audit-logs/', AuditLogListView.as_view()),
+    path('api/v1/notifications/status/', NotificationStatusView.as_view()),
+    path('api/v1/endpoints/', ApiEndpointCatalogView.as_view()),
 ]
