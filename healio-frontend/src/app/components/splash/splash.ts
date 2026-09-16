@@ -12,8 +12,9 @@ export class SplashComponent implements OnInit {
   constructor(private router: Router) {}
 
   ngOnInit(): void {
+    // Allows full letter-fill (2s) + heartbeat cycle (2.8s) before navigating
     setTimeout(() => {
-      this.router.navigate(['/home']);
-    }, 3000);
+      this.router.navigate(['/landing']);
+    }, 4500); 
   }
 }

@@ -1,7 +1,7 @@
 <div class="splash-container">
   <main class="brand-wrapper">
     <!-- Animated SVG Typography -->
-    <svg class="brand-svg" viewBox="0 0 600 120" xmlns="healio-frontend\src\assets\logo.png">
+    <svg class="brand-svg" viewBox="0 0 600 120" xmlns="http://www.w3.org/2000/svg">
       <text x="50%" y="65%" text-anchor="middle" dominant-baseline="middle" class="brand-text">
         <tspan class="letter letter-1">H</tspan>
         <tspan class="letter letter-2">E</tspan>
@@ -11,12 +11,68 @@
         <tspan class="letter letter-6">O</tspan>
       </text>
     </svg>
+
+    <!-- Synchronous Heartbeat Track, Red Line, and Leading Heart -->
+    <div class="pulse-wrapper">
+      <svg class="ecg-svg" viewBox="0 0 520 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <filter id="red-glow" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="3.5" result="blur" />
+            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+          </filter>
+
+          <!-- Master ECG trajectory path (Total length normalized to 100 for exact sync) -->
+          <path id="ecgTrajectory" 
+                pathLength="100"
+                d="M 10 50 L 140 50 L 155 35 L 170 70 L 185 12 L 205 88 L 220 50 L 250 50 L 265 40 L 278 50 L 470 50" />
+        </defs>
+
+        <!-- Static Background Track -->
+        <path class="ecg-track" 
+              d="M 10 50 L 140 50 L 155 35 L 170 70 L 185 12 L 205 88 L 220 50 L 250 50 L 265 40 L 278 50 L 470 50" />
+
+        <!-- Red Line Unveiled in 100% Lockstep with the Heart -->
+        <path class="ecg-synced-line"
+              pathLength="100"
+              stroke-dasharray="100"
+              stroke-dashoffset="100"
+              d="M 10 50 L 140 50 L 155 35 L 170 70 L 185 12 L 205 88 L 220 50 L 250 50 L 265 40 L 278 50 L 470 50" 
+              filter="url(#red-glow)">
+          <animate 
+            attributeName="stroke-dashoffset" 
+            from="100" 
+            to="0" 
+            dur="2.8s" 
+            begin="0.8s" 
+            fill="freeze" 
+            calcMode="linear" />
+        </path>
+
+        <!-- Heart Trailing Exactly at the Tip of the Line -->
+        <g class="moving-heart-group">
+          <!-- Heart centered at tip coordinates (0, 0) -->
+          <path class="pulse-heart"
+                d="M 0 10 C 0 10 -11 1 -11 -6 C -11 -10 -7 -13 -3 -13 C -1 -13 0 -11.5 0 -10.5 C 0 -11.5 1 -13 3 -13 C 7 -13 11 -10 11 -6 C 11 1 0 10 0 10 Z"
+                fill="#EF4444" 
+                filter="url(#red-glow)" />
+
+          <!-- Identical dur, begin, and calcMode guarantees zero drift -->
+          <animateMotion 
+            dur="2.8s" 
+            begin="0.8s" 
+            fill="freeze" 
+            calcMode="linear">
+            <mpath href="#ecgTrajectory" />
+          </animateMotion>
+        </g>
+      </svg>
+    </div>
   </main>
 
+  <!-- Compliance & Animated Quote Footer -->
   <footer class="compliance-footer">
-    
-
-    <p class="disclaimer-text">
-      <i>The Greatest wealth is Health</i></p>
+    <p>
+      <span class="quote-text">The Greatest Wealth is Health..</span>
+    </p>
   </footer>
 </div>

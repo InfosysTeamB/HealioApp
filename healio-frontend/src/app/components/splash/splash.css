@@ -4,6 +4,7 @@
   height: 100vh;
   margin: 0;
   padding: 0;
+  overflow: hidden;
 }
 
 .splash-container {
@@ -15,9 +16,8 @@
   flex-direction: column;
   justify-content: space-between;
   align-items: center;
-  padding: 4rem 1.5rem 3rem;
+  padding: 3rem 1.5rem 2.25rem;
   box-sizing: border-box;
-  overflow: hidden;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
@@ -27,6 +27,7 @@
   width: 100%;
   max-width: 620px;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   z-index: 2;
@@ -36,7 +37,7 @@
   width: 100%;
   height: auto;
   overflow: visible;
-  filter: drop-shadow(0 0 24px rgba(14, 159, 110, 0.45));
+  filter: drop-shadow(0 0 24px rgba(14, 159, 110, 0.35));
 }
 
 .brand-text {
@@ -46,17 +47,16 @@
   letter-spacing: 0.22em;
 }
 
-/* Base state for all letters: transparent body with crisp border */
+/* Sequential Letter Draw & Fill */
 .letter {
   fill: transparent;
   stroke: #0E9F6E;
   stroke-width: 2.2px;
   stroke-dasharray: 260;
   stroke-dashoffset: 260;
-  animation: drawStrokeAndFill 1.2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  animation: drawStrokeAndFill 1.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
 }
 
-/* Staggered sequential delay for each letter: H -> E -> A -> L -> I -> O */
 .letter-1 { animation-delay: 0.1s; }
 .letter-2 { animation-delay: 0.35s; }
 .letter-3 { animation-delay: 0.6s; }
@@ -64,14 +64,13 @@
 .letter-5 { animation-delay: 1.1s; }
 .letter-6 { animation-delay: 1.35s; }
 
-/* 1. Traces the border stroke -> 2. Floods solid dark teal into fill -> 3. Soft aura glow */
 @keyframes drawStrokeAndFill {
   0% {
     stroke-dashoffset: 260;
     fill: transparent;
     opacity: 0.3;
   }
-  60% {
+  65% {
     stroke-dashoffset: 0;
     fill: transparent;
     stroke-width: 2.2px;
@@ -79,7 +78,7 @@
   }
   85% {
     stroke-dashoffset: 0;
-    fill: rgba(14, 159, 110, 0.6);
+    fill: rgba(14, 159, 110, 0.55);
   }
   100% {
     stroke-dashoffset: 0;
@@ -89,58 +88,108 @@
   }
 }
 
+/* ECG Track & Line */
+.pulse-wrapper {
+  width: 100%;
+  max-width: 520px;
+  margin-top: 1rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.ecg-svg {
+  width: 100%;
+  height: 90px;
+  overflow: visible;
+}
+
+.ecg-track {
+  stroke: rgba(239, 68, 68, 0.18);
+  stroke-width: 2px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ecg-synced-line {
+  stroke: #EF4444;
+  stroke-width: 3.2px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Heart continuous idle thump after arriving (0.8s delay + 2.8s movement = 3.6s) */
+.pulse-heart {
+  transform-origin: center;
+  animation: heartThump 1.4s ease-in-out 3.6s infinite;
+}
+
+@keyframes heartThump {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.5));
+  }
+  25% {
+    transform: scale(1.3);
+    filter: drop-shadow(0 0 16px rgba(239, 68, 68, 0.9));
+  }
+  40% {
+    transform: scale(1.08);
+  }
+  55% {
+    transform: scale(1.25);
+    filter: drop-shadow(0 0 18px rgba(239, 68, 68, 1));
+  }
+}
+
+/* Compliance Footer & Floating Quote */
 .compliance-footer {
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1.25rem;
-  max-width: 420px;
+  gap: 0.75rem;
+  max-width: 540px;
   text-align: center;
-  z-index: 2;
-  animation: footerFadeIn 1s ease-out 1.6s backwards;
+  z-index: 10;
+  margin-top: auto;
 }
 
-.emblem-wrapper {
-  position: relative;
-  width: 68px;
-  height: 68px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.emblem-glow {
-  position: absolute;
-  width: 90px;
-  height: 90px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(14, 159, 110, 0.45) 0%, rgba(14, 159, 110, 0) 70%);
-  filter: blur(10px);
-  z-index: 0;
-}
-
-.medical-emblem {
-  width: 100%;
-  height: 100%;
-  z-index: 1;
-  filter: drop-shadow(0 6px 16px rgba(14, 159, 110, 0.4));
-}
-
-.disclaimer-text {
-  font-size: 1.5rem;
-  line-height: 1.55;
-  color: #0E9F6E;
+.quote {
   margin: 0;
-  font-weight: 500;
+  overflow: hidden;
 }
 
-@keyframes footerFadeIn {
+.quote-text {
+  display: inline-block;
+  font-size: 1rem;
+  font-style: italic;
+  font-weight: 600;
+  color: #334155;
+  letter-spacing: 0.03em;
+  animation: quoteFloatUp 1.6s cubic-bezier(0.16, 1, 0.3, 1) 1.8s backwards;
+}
+
+@keyframes badgeReveal {
   from {
     opacity: 0;
-    transform: translateY(12px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes quoteFloatUp {
+  0% {
+    opacity: 0;
+    transform: translateY(18px);
+    filter: blur(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
   }
 }
