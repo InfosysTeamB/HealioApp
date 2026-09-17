@@ -1,0 +1,77 @@
+<div class="modal-backdrop" (click)="close.emit()">
+  <div class="chat-sheet" (click)="$event.stopPropagation()">
+    <!-- Header -->
+    <div class="sheet-header">
+      <div class="bot-profile">
+        <div class="bot-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2a4 4 0 0 1 4 4v2h2a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2h2V6a4 4 0 0 1 4-4z"/>
+            <circle cx="9" cy="13" r="1.25" fill="currentColor"/>
+            <circle cx="15" cy="13" r="1.25" fill="currentColor"/>
+          </svg>
+        </div>
+        <div>
+          <div class="bot-name">
+            <strong>AIDoc</strong>
+            <span class="online-dot"></span>
+          </div>
+          <small>Clinical Triage & Symptom Checker</small>
+        </div>
+      </div>
+      <button class="close-btn" (click)="close.emit()">✕</button>
+    </div>
+
+    <!-- Chat Messages Scroll Area -->
+    <div class="messages-area">
+      @for (msg of messages(); track $index) {
+        <div class="message-bubble" [class.user]="msg.sender === 'user'" [class.ai]="msg.sender === 'ai'">
+          <div class="bubble-content">
+            <p>{{ msg.text }}</p>
+
+            @if (msg.suggestedSpecialty) {
+              <div class="specialty-card-cta">
+                <span>Recommended Care:</span>
+                <button (click)="onSelectSpecialty(msg.suggestedSpecialty)">
+                  Consult a {{ msg.suggestedSpecialty }} →
+                </button>
+              </div>
+            }
+          </div>
+          <span class="msg-time">{{ msg.time }}</span>
+        </div>
+      }
+
+      @if (isThinking()) {
+        <div class="message-bubble ai typing">
+          <div class="dots-loader">
+            <span></span><span></span><span></span>
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- Quick Prompt Pills -->
+    <div class="quick-prompts">
+      @for (prompt of quickPrompts(); track prompt) {
+        <button class="prompt-chip" (click)="sendMessage(prompt)">{{ prompt }}</button>
+      }
+    </div>
+
+    <!-- Input Box -->
+    <div class="chat-input-row">
+      <input 
+        type="text" 
+        placeholder="Type symptoms (e.g. fever since 2 days)..."
+        [ngModel]="userInput()"
+        (ngModelChange)="userInput.set($event)"
+        (keyup.enter)="sendMessage()"
+      />
+      <button class="send-btn" (click)="sendMessage()" [disabled]="!userInput().trim()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="22" y1="2" x2="11" y2="13"/>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>

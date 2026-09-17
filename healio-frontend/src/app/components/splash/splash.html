@@ -1,77 +1,175 @@
 <div class="splash-container">
-  <main class="brand-wrapper">
-    <!-- Animated SVG Typography -->
-    <svg class="brand-svg" viewBox="0 0 600 120" xmlns="http://www.w3.org/2000/svg">
-      <text x="50%" y="65%" text-anchor="middle" dominant-baseline="middle" class="brand-text">
-        <tspan class="letter letter-1">H</tspan>
-        <tspan class="letter letter-2">E</tspan>
-        <tspan class="letter letter-3">A</tspan>
-        <tspan class="letter letter-4">L</tspan>
-        <tspan class="letter letter-5">I</tspan>
-        <tspan class="letter letter-6">O</tspan>
-      </text>
-    </svg>
-
-    <!-- Synchronous Heartbeat Track, Red Line, and Leading Heart -->
-    <div class="pulse-wrapper">
-      <svg class="ecg-svg" viewBox="0 0 520 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Dynamic Brand Header & ECG Pulse Line -->
+  <header class="brand-wrapper" [class.brand-compact]="step() !== 'splash'">
+    <div class="svg-stage">
+      <svg class="brand-svg" viewBox="0 0 900 180" xmlns="http://www.w3.org/2000/svg">
         <defs>
-          <filter id="red-glow" x="-30%" y="-30%" width="160%" height="160%">
-            <feGaussianBlur stdDeviation="3.5" result="blur" />
-            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+          <filter id="emerald-glow" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="6" result="blur" />
+            <feComposite in="SourceGraphic" in2="blur" />
           </filter>
-
-          <!-- Master ECG trajectory path (Total length normalized to 100 for exact sync) -->
-          <path id="ecgTrajectory" 
-                pathLength="100"
-                d="M 10 50 L 140 50 L 155 35 L 170 70 L 185 12 L 205 88 L 220 50 L 250 50 L 265 40 L 278 50 L 470 50" />
         </defs>
 
-        <!-- Static Background Track -->
-        <path class="ecg-track" 
-              d="M 10 50 L 140 50 L 155 35 L 170 70 L 185 12 L 205 88 L 220 50 L 250 50 L 265 40 L 278 50 L 470 50" />
-
-        <!-- Red Line Unveiled in 100% Lockstep with the Heart -->
-        <path class="ecg-synced-line"
-              pathLength="100"
-              stroke-dasharray="100"
-              stroke-dashoffset="100"
-              d="M 10 50 L 140 50 L 155 35 L 170 70 L 185 12 L 205 88 L 220 50 L 250 50 L 265 40 L 278 50 L 470 50" 
-              filter="url(#red-glow)">
-          <animate 
-            attributeName="stroke-dashoffset" 
-            from="100" 
-            to="0" 
-            dur="2.8s" 
-            begin="0.8s" 
-            fill="freeze" 
-            calcMode="linear" />
-        </path>
-
-        <!-- Heart Trailing Exactly at the Tip of the Line -->
-        <g class="moving-heart-group">
-          <!-- Heart centered at tip coordinates (0, 0) -->
-          <path class="pulse-heart"
-                d="M 0 10 C 0 10 -11 1 -11 -6 C -11 -10 -7 -13 -3 -13 C -1 -13 0 -11.5 0 -10.5 C 0 -11.5 1 -13 3 -13 C 7 -13 11 -10 11 -6 C 11 1 0 10 0 10 Z"
-                fill="#EF4444" 
-                filter="url(#red-glow)" />
-
-          <!-- Identical dur, begin, and calcMode guarantees zero drift -->
-          <animateMotion 
-            dur="2.8s" 
-            begin="0.8s" 
-            fill="freeze" 
-            calcMode="linear">
-            <mpath href="#ecgTrajectory" />
-          </animateMotion>
-        </g>
+        <!-- Dynamic Stroke-Drawing HEALIO Vector -->
+        <text 
+          x="50%" 
+          y="68%" 
+          text-anchor="middle" 
+          dominant-baseline="middle" 
+          class="brand-contour">
+          HEALIO
+        </text>
       </svg>
     </div>
-  </main>
 
-  <!-- Compliance & Animated Quote Footer -->
+    @if (step() === 'splash') {
+      <div class="pulse-wrapper">
+        <svg class="ecg-svg" viewBox="0 0 700 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <filter id="red-glow" x="-30%" y="-30%" width="160%" height="160%">
+              <feGaussianBlur stdDeviation="3.5" result="blur" />
+              <feComposite in="SourceGraphic" in2="blur" />
+            </filter>
+          </defs>
+
+          <!-- Faint Reference Track -->
+          <path 
+            class="ecg-track" 
+            d="M 10 50 L 220 50 L 240 32 L 260 72 L 280 10 L 305 90 L 325 50 L 360 50 L 380 38 L 398 50 L 690 50" 
+            stroke="rgba(239, 68, 68, 0.16)" 
+            stroke-width="3.5" 
+            stroke-linecap="round" 
+            stroke-linejoin="round" />
+
+          <!-- Real-time Red Pulse Line -->
+          <path 
+            class="ecg-synced-line" 
+            pathLength="100" 
+            stroke-dasharray="100" 
+            stroke-dashoffset="100"
+            d="M 10 50 L 220 50 L 240 32 L 260 72 L 280 10 L 305 90 L 325 50 L 360 50 L 380 38 L 398 50 L 690 50" 
+            stroke="#EF4444" 
+            stroke-width="4" 
+            stroke-linecap="round" 
+            stroke-linejoin="round"
+            filter="url(#red-glow)">
+            <animate 
+              attributeName="stroke-dashoffset" 
+              from="100" 
+              to="0" 
+              dur="2.2s" 
+              begin="1.2s" 
+              fill="freeze" 
+              calcMode="linear" />
+          </path>
+        </svg>
+      </div>
+    }
+  </header>
+
+  <!-- Interactive Auth Card -->
+  @if (step() !== 'splash') {
+    <main class="auth-card">
+      <!-- Step 1: Email Form -->
+      @if (step() === 'email') {
+        <section class="fade-step">
+          <div class="card-icon-badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect width="20" height="16" x="2" y="4" rx="2"/>
+              <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+            </svg>
+          </div>
+
+          <h2 class="card-title">Welcome to Healio</h2>
+          <p class="card-subtitle">Enter your email address to receive your secure login code.</p>
+
+          <form (ngSubmit)="sendOtp()" class="auth-form">
+            <div class="input-field-group">
+              <label for="email" class="input-label">EMAIL ADDRESS</label>
+              <input 
+                type="email" 
+                id="email" 
+                [ngModel]="email()" 
+                (ngModelChange)="email.set($event)"
+                name="email" 
+                placeholder="doctor@hospital.org or patient@mail.com" 
+                required 
+                [disabled]="isLoading()"
+                class="email-input" />
+            </div>
+
+            <button 
+              type="submit" 
+              class="submit-btn" 
+              [disabled]="!isValidEmail() || isLoading()">
+              @if (!isLoading()) {
+                <span>Send Verification Code</span>
+              } @else {
+                <span class="spinner"></span>
+              }
+            </button>
+          </form>
+        </section>
+      }
+
+      <!-- Step 2: OTP Form -->
+      @if (step() === 'otp') {
+        <section class="fade-step">
+          <button class="back-btn" (click)="step.set('email')" type="button">
+            ← Edit email
+          </button>
+
+          <div class="card-icon-badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+          </div>
+
+          <h2 class="card-title">Check Your Inbox</h2>
+          <p class="card-subtitle">We sent a 6-digit verification code to <br><strong>{{ email() }}</strong></p>
+
+          <div class="otp-inputs-grid">
+            @for (digit of otpDigits; track $index; let i = $index) {
+              <input 
+                #otpInput
+                type="text" 
+                maxlength="1" 
+                inputmode="numeric"
+                pattern="[0-9]*"
+                [(ngModel)]="otpDigits[i]" 
+                (keyup)="onOtpInput($event, i)" 
+                class="otp-box" />
+            }
+          </div>
+
+          <button 
+            type="button" 
+            class="submit-btn" 
+            (click)="verifyOtp()" 
+            [disabled]="!isOtpComplete() || isLoading()">
+            @if (!isLoading()) {
+              <span>Verify & Enter</span>
+            } @else {
+              <span class="spinner"></span>
+            }
+          </button>
+
+          <div class="resend-wrapper">
+            @if (countdown() > 0) {
+              <p class="timer-text">Resend code in <strong>{{ countdown() }}s</strong></p>
+            } @else {
+              <button (click)="resendOtp()" class="resend-link" type="button">Resend Code</button>
+            }
+          </div>
+        </section>
+      }
+    </main>
+  }
+
+  <!-- Footer Compliance -->
   <footer class="compliance-footer">
-    <p>
+    <p class="quote">
       <span class="quote-text">The Greatest Wealth is Health..</span>
     </p>
   </footer>

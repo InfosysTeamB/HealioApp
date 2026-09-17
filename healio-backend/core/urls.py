@@ -1,5 +1,5 @@
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
 from clinical.views import (
     PatientListCreateView,
     PatientUserRegistrationView,
@@ -35,4 +35,5 @@ urlpatterns = [
     path('api/v1/audit-logs/', AuditLogListView.as_view()),
     path('api/v1/notifications/status/', NotificationStatusView.as_view()),
     path('api/v1/endpoints/', ApiEndpointCatalogView.as_view()),
+    path('api/auth/', include('authentication.urls')),
 ]

@@ -1,0 +1,51 @@
+<div class="modal-backdrop" (click)="close.emit()">
+  <div class="modal-sheet" (click)="$event.stopPropagation()">
+    <div class="handle"></div>
+
+    <div class="sheet-header">
+      <div>
+        <h3>Choose Your Location</h3>
+        <p>Doctors and services will customize to your area</p>
+      </div>
+      <button class="close-btn" (click)="close.emit()">✕</button>
+    </div>
+
+    <div class="search-box">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input 
+        type="text" 
+        placeholder="Search area, landmark or street..."
+        [(ngModel)]="searchQuery" 
+        (keyup.enter)="searchAddress()"
+      />
+      <button class="search-action-btn" (click)="searchAddress()">Search</button>
+    </div>
+
+    <button class="gps-btn" (click)="detectLocation()" [disabled]="isLocating()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#0E9F6E" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="2" x2="12" y2="6"/>
+        <line x1="12" y1="18" x2="12" y2="22"/>
+        <line x1="2" y1="12" x2="6" y2="12"/>
+        <line x1="18" y1="12" x2="22" y2="12"/>
+      </svg>
+      <span>{{ isLocating() ? 'Fetching GPS...' : 'Use current location' }}</span>
+    </button>
+
+    <div class="map-wrapper">
+      <div #mapContainer class="leaflet-canvas"></div>
+      <span class="map-tip">Drag the pin to adjust exact spot</span>
+    </div>
+
+    <div class="selected-details">
+      <div class="loc-summary">
+        <h4>{{ selectedCityName() }}</h4>
+        <p>{{ selectedAddress() }}</p>
+      </div>
+      <button class="confirm-btn" (click)="confirm()">Confirm Location</button>
+    </div>
+  </div>
+</div>

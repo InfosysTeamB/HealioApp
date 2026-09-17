@@ -8,7 +8,7 @@ import { authGuard } from './guards/auth.guard';
 import { SecurityPortalComponent } from './components/security-portal/security-portal';
 
 export const routes: Routes = [
-  { path: '', component: SplashComponent },
+  { path: '', redirectTo: 'home', pathMatch: 'full' },
   { path: 'home', component: LandingComponent },
   { path: 'login', component: LoginComponent },
   { 
@@ -24,5 +24,5 @@ export const routes: Routes = [
     data: { role: 'doctor' }
   },
   { path: 'security', component: SecurityPortalComponent },
-  { path: '**', redirectTo: 'home' }
+  { path: '**', redirectTo: '' }
 ];
