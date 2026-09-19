@@ -1,6 +1,22 @@
-import { Injectable } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+
+export interface AppointmentRecord {
+  id?: string;
+  consultationType: 'in-person' | 'video';
+  patientEmail: string;
+  patientName: string;
+  doctorName: string;
+  doctorSpecialization: string;
+  doctorClinic?: string;
+  date: string;
+  timeSlot: string;
+  status: 'Confirmed' | 'Completed' | 'Cancelled';
+  meetingLink?: string;
+  doctorAvatar?: string;
+  fee?: number;
+}
 
 export interface PatientProfile {
   blood_group: string;
@@ -98,12 +114,142 @@ export interface NotificationStatus {
   providedIn: 'root'
 })
 export class ClinicalService {
+  readonly appointments = signal<AppointmentRecord[]>([]);
+
   private get v1Url(): string {
     const host = window.location.hostname || 'localhost';
     return `http://${host}:8000/api/v1`;
   }
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) {
+    this.loadAppointmentsFromStorage();
+  }
+
+  private loadAppointmentsFromStorage(): void {
+    if (typeof localStorage === 'undefined') return;
+    try {
+      const raw = localStorage.getItem('healio_appointments');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          this.appointments.set(parsed);
+          return;
+        }
+      }
+    } catch (e) {
+      console.error('Error reading healio_appointments from storage:', e);
+    }
+
+    // Default initial seed if completely empty
+    let userEmail = 'patient@healio.health';
+    let userName = 'Patient User';
+    try {
+      const savedUser = localStorage.getItem('healio_user');
+      if (savedUser) {
+        const parsedUser = JSON.parse(savedUser);
+        if (parsedUser.email) userEmail = parsedUser.email;
+        if (parsedUser.name) userName = parsedUser.name;
+      }
+    } catch {}
+
+    const defaultSeed: AppointmentRecord[] = [
+      {
+        id: 'APPT-DEMO-001',
+        consultationType: 'in-person',
+        patientEmail: userEmail,
+        patientName: userName,
+        doctorName: 'Dr. Ramesh Rao',
+        doctorSpecialization: 'Cardiologist',
+        doctorClinic: 'Apollo Cradle Clinic',
+        date: 'Today',
+        timeSlot: '4:30 PM',
+        status: 'Confirmed',
+        doctorAvatar: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=300&auto=format&fit=crop&q=80'
+      }
+    ];
+    this.appointments.set(defaultSeed);
+    try {
+      localStorage.setItem('healio_appointments', JSON.stringify(defaultSeed));
+    } catch {}
+  }
+
+  private saveAppointmentsToStorage(appts: AppointmentRecord[]): void {
+    if (typeof localStorage !== 'undefined') {
+      try {
+        localStorage.setItem('healio_appointments', JSON.stringify(appts));
+      } catch (e) {
+        console.error('Error saving healio_appointments to storage:', e);
+      }
+    }
+  }
+
+  bookAppointment(record: {
+    consultationType: 'in-person' | 'video';
+    patientEmail: string;
+    patientName: string;
+    doctorName: string;
+    doctorSpecialization: string;
+    doctorClinic?: string;
+    date?: string;
+    timeSlot: string;
+    status?: 'Confirmed' | 'Completed' | 'Cancelled';
+    meetingLink?: string;
+    doctorAvatar?: string;
+    fee?: number;
+    id?: string;
+  }): AppointmentRecord {
+    const timestamp = Date.now();
+    const meetingLink = record.consultationType === 'video'
+      ? (record.meetingLink || `https://meet.healio.health/room/${timestamp}`)
+      : undefined;
+
+    const newRecord: AppointmentRecord = {
+      id: record.id || `APPT-${timestamp}`,
+      consultationType: record.consultationType,
+      patientEmail: record.patientEmail,
+      patientName: record.patientName,
+      doctorName: record.doctorName,
+      doctorSpecialization: record.doctorSpecialization,
+      doctorClinic: record.doctorClinic || (record.consultationType === 'video' ? 'Healio TeleHealth' : 'Apollo Cradle Clinic'),
+      date: record.date || 'Today',
+      timeSlot: record.timeSlot,
+      status: record.status || 'Confirmed',
+      meetingLink,
+      doctorAvatar: record.doctorAvatar,
+      fee: record.fee
+    };
+
+    const updated = [newRecord, ...this.appointments()];
+    this.appointments.set(updated);
+    this.saveAppointmentsToStorage(updated);
+    return newRecord;
+  }
+
+  getLatestUpcoming(patientEmail?: string | null): AppointmentRecord | null {
+    const list = this.appointments();
+    if (!list || list.length === 0) return null;
+
+    if (!patientEmail) {
+      return list.find(a => a.status === 'Confirmed') || null;
+    }
+
+    const emailLower = patientEmail.toLowerCase().trim();
+    // Prioritize match for this specific patient email
+    const match = list.find(a => a.status === 'Confirmed' && a.patientEmail.toLowerCase().trim() === emailLower);
+    if (match) return match;
+
+    // Fallback if demo default patient appointment exists
+    const demoFallback = list.find(a => a.status === 'Confirmed' && a.patientEmail === 'patient@healio.health');
+    return demoFallback || null;
+  }
+
+  cancelAppointmentRecord(id: string): void {
+    const updated = this.appointments().map(a => 
+      a.id === id ? { ...a, status: 'Cancelled' as const } : a
+    );
+    this.appointments.set(updated);
+    this.saveAppointmentsToStorage(updated);
+  }
 
   getPatients(): Observable<Patient[]> {
     return this.http.get<Patient[]>(`${this.v1Url}/patients/`);

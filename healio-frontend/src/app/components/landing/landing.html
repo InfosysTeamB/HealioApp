@@ -110,11 +110,11 @@
 
   <!-- Primary Consult Cards -->
   <section class="consult-hero-grid">
-    <div class="consult-card consult-inperson" (click)="navigateBottom('in-person')" style="cursor: pointer;">
+    <div class="consult-card consult-inperson" (click)="openBookingFlow('in-person')" style="cursor: pointer;" title="Book In-Person Clinic Visit">
       <img src="/InPersonConsultation.png" alt="In-Person Consultation" class="hero-card-img" />
     </div>
 
-    <div class="consult-card consult-video" (click)="navigateBottom('video')" style="cursor: pointer;">
+    <div class="consult-card consult-video" (click)="openBookingFlow('video')" style="cursor: pointer;" title="Book Video Consultation">
       <img src="/VideoConsultation.png" alt="Video Consultation" class="hero-card-img" />
     </div>
   </section>
@@ -399,24 +399,46 @@
         </div>
 
         <!-- Upcoming Consultation Reminder Card -->
+        @if (upcomingAppointment(); as appt) {
         <div class="consultation-reminder-card">
           <div class="reminder-badge-row">
             <span class="reminder-tag">Upcoming Visit</span>
-            <span class="status-confirmed">● Confirmed</span>
+            <span class="status-confirmed">● {{ appt.status }}</span>
           </div>
           <div class="reminder-doc-row">
-            <img src="https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=300&auto=format&fit=crop&q=80"
-              alt="Doctor" class="reminder-avatar" />
+            <img [src]="appt.doctorAvatar || 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=300&auto=format&fit=crop&q=80'"
+              [alt]="appt.doctorName" class="reminder-avatar" />
             <div class="reminder-details">
-              <strong>Dr. Ramesh Rao</strong>
-              <small>Cardiologist • Apollo Cradle Clinic</small>
-              <span class="reminder-time">📍 Today at 4:30 PM (In-Person)</span>
+              <strong>{{ appt.doctorName }}</strong>
+              <small>{{ appt.doctorSpecialization }} • {{ appt.doctorClinic || 'Apollo Cradle Clinic' }}</small>
+              @if (appt.consultationType === 'video') {
+                <span class="reminder-time">🎥 Video Call at {{ appt.timeSlot }} ({{ appt.date }})</span>
+              } @else {
+                <span class="reminder-time">📍 In-Person at {{ appt.timeSlot }} ({{ appt.date }})</span>
+              }
             </div>
           </div>
           <div class="reminder-actions">
-            <button class="btn-reminder-primary" (click)="openAppointmentModal()" title="View Itinerary & Clinic Details">View Appointment Details</button>
+            @if (appt.consultationType === 'video') {
+              <a [href]="appt.meetingLink" target="_blank" class="action-btn" title="Join Video Consultation">
+                Join Video Consultation
+              </a>
+            } @else {
+              <button type="button" class="action-btn" (click)="openAppointmentModal()" title="View Itinerary & Clinic Details">
+                View Appointment Details
+              </button>
+            }
           </div>
         </div>
+        } @else {
+        <div class="consultation-reminder-card empty-appt-card">
+          <div class="empty-appt-icon">📅</div>
+          <p class="empty-appt-text">No active consultations booked.</p>
+          <button type="button" class="action-btn btn-sm-book" (click)="openBookingFlow('in-person')">
+            Book a Consultation
+          </button>
+        </div>
+        }
 
         <!-- Quick Navigation Links ("My Appointments", "Health Records", "Prescriptions") -->
         <div class="drawer-menu-list">
@@ -577,18 +599,18 @@
     <div class="service-modal-sheet appt-modal-sheet" (click)="$event.stopPropagation()" role="dialog" aria-labelledby="appt-details-title">
       <div class="modal-top-bar">
         <div class="modal-badge-group">
-          <span class="badge-status-confirmed">● Confirmed In-Person Visit</span>
+          <span class="badge-status-confirmed">● {{ upcomingAppointment()?.status || 'Confirmed' }} {{ upcomingAppointment()?.consultationType === 'video' ? 'Video Visit' : 'In-Person Visit' }}</span>
           <span class="badge-token-number">Queue Token: #14</span>
         </div>
         <button class="modal-close-btn" type="button" (click)="closeAppointmentModal()" aria-label="Close Appointment Details">✕</button>
       </div>
 
       <div class="appt-modal-header">
-        <img src="https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=300&auto=format&fit=crop&q=80" alt="Dr. Ramesh Rao" class="appt-doc-avatar" />
+        <img [src]="upcomingAppointment()?.doctorAvatar || 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=300&auto=format&fit=crop&q=80'" [alt]="upcomingAppointment()?.doctorName || 'Dr. Ramesh Rao'" class="appt-doc-avatar" />
         <div class="appt-doc-meta">
-          <h3 id="appt-details-title">Dr. Ramesh Rao</h3>
-          <p class="appt-doc-spec">Senior Interventional Cardiologist • MD, DM (Cardiology)</p>
-          <span class="appt-doc-exp">18+ Years Experience • Apollo Cradle Clinic</span>
+          <h3 id="appt-details-title">{{ upcomingAppointment()?.doctorName || 'Dr. Ramesh Rao' }}</h3>
+          <p class="appt-doc-spec">{{ upcomingAppointment()?.doctorSpecialization || 'Senior Interventional Cardiologist' }}</p>
+          <span class="appt-doc-exp">{{ upcomingAppointment()?.doctorClinic || 'Apollo Cradle Clinic' }}</span>
         </div>
       </div>
 
@@ -597,17 +619,17 @@
           <div class="itin-icon">🕒</div>
           <div class="itin-body">
             <small>Consultation Schedule</small>
-            <strong>Today, 4:30 PM IST</strong>
-            <span>Report 15 mins early for vitals check</span>
+            <strong>{{ upcomingAppointment()?.date || 'Today' }}, {{ upcomingAppointment()?.timeSlot || '4:30 PM' }} IST</strong>
+            <span>{{ upcomingAppointment()?.consultationType === 'video' ? 'Ensure camera and audio permissions are allowed' : 'Report 15 mins early for vitals check' }}</span>
           </div>
         </div>
 
         <div class="itinerary-card location-card">
-          <div class="itin-icon">🏥</div>
+          <div class="itin-icon">{{ upcomingAppointment()?.consultationType === 'video' ? '🎥' : '🏥' }}</div>
           <div class="itin-body">
-            <small>Consultation Venue</small>
-            <strong>Apollo Cradle Clinic</strong>
-            <span>Plot 42, 100 Feet Road, HAL 2nd Stage, Indiranagar, Bangalore - 560038</span>
+            <small>{{ upcomingAppointment()?.consultationType === 'video' ? 'Teleconsultation Room' : 'Consultation Venue' }}</small>
+            <strong>{{ upcomingAppointment()?.doctorClinic || 'Apollo Cradle Clinic' }}</strong>
+            <span>{{ upcomingAppointment()?.consultationType === 'video' ? (upcomingAppointment()?.meetingLink || 'https://meet.healio.health/room') : 'Plot 42, 100 Feet Road, HAL 2nd Stage, Indiranagar, Bangalore - 560038' }}</span>
           </div>
         </div>
 
@@ -616,7 +638,7 @@
           <div class="itin-body">
             <small>Live Token Number</small>
             <strong class="token-val">#14 (3 Patients Ahead)</strong>
-            <span>Estimated consult window: 4:30 PM - 4:50 PM</span>
+            <span>Estimated consult window: {{ upcomingAppointment()?.timeSlot || '4:30 PM' }} - 4:50 PM</span>
           </div>
         </div>
       </div>
@@ -905,6 +927,107 @@
             Place Order with 20% Discount
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+  }
+
+  <!-- Dynamic Booking Sheet / Modal for In-Person & Video Consultations -->
+  @if (isBookingSheetOpen()) {
+  <div class="service-modal-backdrop" (click)="closeBookingSheet()">
+    <div class="service-modal-sheet booking-sheet" (click)="$event.stopPropagation()" role="dialog" aria-labelledby="booking-sheet-title">
+      <div class="modal-top-bar">
+        <div class="modal-title-with-icon">
+          <span class="m-icon">{{ bookingConsultationType() === 'video' ? '🎥' : '📍' }}</span>
+          <div>
+            <h3 id="booking-sheet-title">
+              {{ bookingConsultationType() === 'video' ? 'Book Video Consultation' : 'Book In-Person Clinic Visit' }}
+            </h3>
+            <p>
+              {{ bookingConsultationType() === 'video' ? 'Instant HD Teleconsultation • Verified Specialist' : 'Priority Token Reservation • Direct Hospital Visit' }}
+            </p>
+          </div>
+        </div>
+        <button class="modal-close-btn" type="button" (click)="closeBookingSheet()" aria-label="Close Booking Sheet">✕</button>
+      </div>
+
+      @if (bookingConfirmationSuccess()) {
+      <div class="service-success-banner">
+        <span class="banner-icon">✓</span>
+        <div class="banner-text">
+          <strong>Booking Confirmed!</strong>
+          <p>{{ bookingConfirmationSuccess() }}</p>
+        </div>
+      </div>
+      }
+
+      <!-- Doctor Selection Tray -->
+      <div class="booking-doctor-tray">
+        <label class="section-label">Select Specialist Doctor:</label>
+        <div class="doctor-select-scroll">
+          @if (bookingConsultationType() === 'video') {
+            @for (doc of onlineVideoDoctors(); track doc.id) {
+            <div class="doctor-choice-card" [class.selected]="selectedDoctorForBooking()?.id === doc.id" (click)="selectBookingDoctor(doc)">
+              <img [src]="doc.avatarUrl" [alt]="doc.name" class="choice-avatar" />
+              <div class="choice-meta">
+                <strong>{{ doc.name }}</strong>
+                <small>{{ doc.specialty }}</small>
+                <span class="fee-tag">₹{{ doc.videoFee }} • Video</span>
+              </div>
+            </div>
+            }
+          } @else {
+            @for (doc of inPersonDoctors(); track doc.id) {
+            <div class="doctor-choice-card" [class.selected]="selectedDoctorForBooking()?.id === doc.id" (click)="selectBookingDoctor(doc)">
+              <img [src]="doc.avatarUrl" [alt]="doc.name" class="choice-avatar" />
+              <div class="choice-meta">
+                <strong>{{ doc.name }}</strong>
+                <small>{{ doc.specialty }}</small>
+                <span class="clinic-tag">{{ doc.clinicName }}</span>
+              </div>
+            </div>
+            }
+          }
+        </div>
+      </div>
+
+      <!-- Time Slot Selection -->
+      <div class="booking-slots-tray">
+        <label class="section-label">Select Preferred Time Slot (Today):</label>
+        <div class="slot-pills-grid">
+          @for (slot of availableBookingSlots; track slot) {
+          <button type="button" class="slot-pill-btn" [class.active]="selectedBookingSlot() === slot" (click)="selectBookingSlot(slot)">
+            {{ slot }}
+          </button>
+          }
+        </div>
+      </div>
+
+      <!-- Patient & Clinic Summary -->
+      <div class="booking-summary-box">
+        <div class="summary-row">
+          <span class="summary-label">Patient:</span>
+          <strong class="summary-value">{{ currentUser()?.name || 'Patient User' }} ({{ currentUser()?.email || 'patient@healio.health' }})</strong>
+        </div>
+        <div class="summary-row">
+          <span class="summary-label">Consultation Mode:</span>
+          <strong class="summary-value mode-tag">
+            {{ bookingConsultationType() === 'video' ? '🎥 Live Video Call (Link generated upon booking)' : '📍 In-Person Hospital Visit' }}
+          </strong>
+        </div>
+        @if (selectedDoctorForBooking(); as doc) {
+        <div class="summary-row">
+          <span class="summary-label">Selected Doctor:</span>
+          <strong class="summary-value">{{ doc.name }} ({{ doc.specialty }})</strong>
+        </div>
+        }
+      </div>
+
+      <!-- Modal Footer CTA -->
+      <div class="booking-footer">
+        <button type="button" class="action-btn btn-confirm-booking" (click)="confirmBookingFromSheet()">
+          Confirm {{ bookingConsultationType() === 'video' ? 'Video Call' : 'Clinic Visit' }} ({{ selectedBookingSlot() }})
+        </button>
       </div>
     </div>
   </div>

@@ -7,6 +7,7 @@ import { AidocModalComponent } from '../../shared/aidoc-modal/aidoc-modal';
 import { InpersonConsultCardComponent } from '../../shared/inperson-consult-card/inperson-consult-card';
 import { DoctorStreamService, ClinicDoctor } from '../../services/doctor-stream.service';
 import { AuthService, UserSession } from '../../services/auth.service';
+import { ClinicalService, AppointmentRecord } from '../../services/clinical.service';
 
 export interface Speciality {
   name: string;
@@ -65,10 +66,25 @@ export interface VideoDoctor {
 export class LandingComponent implements OnInit {
   private doctorStream = inject(DoctorStreamService);
   private authService = inject(AuthService);
+  private clinicalService = inject(ClinicalService);
   private router = inject(Router);
 
   // Profile modal state for doctor details
   selectedDoctorProfile = signal<ClinicDoctor | null>(null);
+
+  // Centralized Dynamic Appointment Synchronization with Profile Drawer
+  readonly upcomingAppointment = computed(() => {
+    return this.clinicalService.getLatestUpcoming(this.currentUser()?.email);
+  });
+
+  // Dynamic Booking Flow Sheet State
+  isBookingSheetOpen = signal<boolean>(false);
+  bookingConsultationType = signal<'in-person' | 'video'>('in-person');
+  selectedDoctorForBooking = signal<any>(null);
+  selectedBookingSlot = signal<string>('04:30 PM');
+  bookingConfirmationSuccess = signal<string | null>(null);
+
+  availableBookingSlots = ['09:30 AM', '11:00 AM', '02:30 PM', '04:30 PM', '06:00 PM'];
 
   // Verified User auth and profile drawer state
   readonly currentUser = this.authService.currentUser;
@@ -738,6 +754,24 @@ export class LandingComponent implements OnInit {
   // --- Live Instant Slot Booking ---
   handleSlotBooking(event: { doctorId: string; slot: string }) {
     const res = this.doctorStream.bookSlotOptimistic(event.doctorId, event.slot);
+    const doc = res.doctor || this.inPersonDoctors().find(d => d.id === event.doctorId);
+    const user = this.currentUser() || this.getStoredUser();
+
+    if (doc) {
+      this.clinicalService.bookAppointment({
+        consultationType: 'in-person',
+        patientEmail: user?.email || 'patient@healio.health',
+        patientName: user?.name || 'Patient User',
+        doctorName: doc.name,
+        doctorSpecialization: doc.specialty,
+        doctorClinic: (doc as any).clinicName || (doc as any).clinic || 'Apollo Cradle Clinic',
+        date: 'Today',
+        timeSlot: event.slot,
+        status: 'Confirmed',
+        doctorAvatar: doc.avatarUrl
+      });
+    }
+
     if (res.success && res.doctor) {
       console.log(`[Healio Booking] Locked slot ${event.slot} with ${res.doctor.name}`);
       this.addToRecentlyViewed({
@@ -748,6 +782,82 @@ export class LandingComponent implements OnInit {
         doctorId: res.doctor.id,
         query: res.doctor.name
       });
+    }
+  }
+
+  // --- Dynamic Booking Sheet Actions ---
+  openBookingFlow(type: 'in-person' | 'video', doctor?: any) {
+    this.bookingConsultationType.set(type);
+    this.bookingConfirmationSuccess.set(null);
+    this.selectedBookingSlot.set('04:30 PM');
+
+    if (doctor) {
+      this.selectedDoctorForBooking.set(doctor);
+    } else {
+      if (type === 'video') {
+        this.selectedDoctorForBooking.set(this.onlineVideoDoctors()[0]);
+      } else {
+        this.selectedDoctorForBooking.set(this.inPersonDoctors()[0]);
+      }
+    }
+    this.isBookingSheetOpen.set(true);
+  }
+
+  closeBookingSheet() {
+    this.isBookingSheetOpen.set(false);
+    this.bookingConfirmationSuccess.set(null);
+  }
+
+  selectBookingSlot(slot: string) {
+    this.selectedBookingSlot.set(slot);
+  }
+
+  selectBookingDoctor(doc: any) {
+    this.selectedDoctorForBooking.set(doc);
+  }
+
+  confirmBookingFromSheet() {
+    const user = this.currentUser() || this.getStoredUser();
+    const type = this.bookingConsultationType();
+    const doc = this.selectedDoctorForBooking();
+    const slot = this.selectedBookingSlot();
+
+    if (!doc) return;
+
+    const docName = doc.name || 'Dr. Ramesh Rao';
+    const docSpecialty = doc.specialty || 'General Physician';
+    const clinic = type === 'video' ? 'Healio TeleHealth' : (doc.clinicName || doc.clinic || 'Apollo Cradle Clinic');
+    const avatar = doc.avatarUrl;
+
+    this.clinicalService.bookAppointment({
+      consultationType: type,
+      patientEmail: user?.email || 'patient@healio.health',
+      patientName: user?.name || 'Patient User',
+      doctorName: docName,
+      doctorSpecialization: docSpecialty,
+      doctorClinic: clinic,
+      date: 'Today',
+      timeSlot: slot,
+      status: 'Confirmed',
+      doctorAvatar: avatar
+    });
+
+    this.bookingConfirmationSuccess.set(`Appointment confirmed for ${slot}!`);
+
+    setTimeout(() => {
+      this.isBookingSheetOpen.set(false);
+      this.bookingConfirmationSuccess.set(null);
+      this.isProfileDrawerOpen.set(true);
+    }, 600);
+  }
+
+  private getStoredUser(): UserSession | null {
+    if (typeof localStorage === 'undefined') return null;
+    try {
+      const raw = localStorage.getItem('healio_user');
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
     }
   }
 
@@ -996,7 +1106,7 @@ export class LandingComponent implements OnInit {
       type: 'doctor',
       query: doctor.name
     });
-    this.isAiDocModalOpen.set(true);
+    this.openBookingFlow('video', doctor);
   }
 
   // --- Functional Bottom Navigation ---

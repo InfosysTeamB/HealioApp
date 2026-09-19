@@ -68,7 +68,7 @@
       class="pnav-tab" 
       [class.active]="activePortalTab() === 'appointments'" 
       (click)="activePortalTab.set('appointments')">
-      <span>📅 Appointments & Slots</span>
+      <span>📅 Appointments ({{ userAppointments().length }})</span>
     </button>
     <button 
       type="button" 
@@ -89,81 +89,140 @@
   </nav>
 
   <main class="portal-content">
-    <!-- PRIMARY HERO CARD: WEEKLY APPOINTMENT TIMETABLE -->
-    <section class="card slot-card hero-card" *ngIf="activePortalTab() === 'all' || activePortalTab() === 'appointments'" aria-labelledby="timetable-heading">
+    <!-- PRIMARY HERO CARD: PRACTO-STYLE BOOKED CONSULTATIONS -->
+    <section class="card slot-card hero-card" *ngIf="activePortalTab() === 'all' || activePortalTab() === 'appointments'" aria-labelledby="consultations-heading">
       <div class="card-title-row">
         <div>
-          <h3 id="timetable-heading">Weekly Consultation Timetable & Appointment Booking</h3>
-          <p class="card-subtext">Live synchronized with clinical scheduling database in PostgreSQL</p>
+          <h3 id="consultations-heading">My Scheduled Consultations</h3>
+          <p class="card-subtext">Manage upcoming in-person clinic visits and direct video consultations</p>
         </div>
-        <span class="live-pill">Live Synced</span>
+        <div class="header-action-group">
+          <span class="live-pill">Live Synced</span>
+          <a routerLink="/home" class="btn-new-booking-link" aria-label="Book new appointment on home screen">+ Book New Consultation</a>
+        </div>
       </div>
 
-      <!-- Weekly Schedule Grid -->
-      <div class="table-container" role="region" tabindex="0" aria-label="Weekly appointment schedule table, scroll horizontally if needed">
-        <table class="slot-table" aria-label="Doctor consultation slots">
-          <thead>
-            <tr>
-              <th scope="col">Time Slot</th>
-              <th scope="col" *ngFor="let day of days">{{ day }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let time of timeSlots">
-              <td class="time-col">{{ time }}</td>
-              <td *ngFor="let day of days" class="status-cell">
-                <ng-container *ngIf="getSlot(day, time) as slot">
-                  <span [class]="'badge badge-' + slot.status.toLowerCase()">
-                    {{ slot.status }}
-                  </span>
-                </ng-container>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Booking Strip -->
-      <div class="booking-strip" role="group" aria-label="Appointment booking controls">
-        <div class="control-group">
-          <label for="patient-id-input">Your Patient ID:</label>
-          <input id="patient-id-input" type="text" [value]="patientId || 'PT-88341'" readonly class="input-readonly highlight-pid" />
-        </div>
-
-        <div class="control-group">
-          <label for="doctor-id-input">Doctor ID:</label>
-          <input id="doctor-id-input" type="text" [(ngModel)]="doctorId" readonly class="input-readonly" />
-        </div>
-
-        <div class="control-group flex-2">
-          <label for="slot-select">Available Slot:</label>
-          <select id="slot-select" class="styled-select" [(ngModel)]="selectedSlotId" aria-label="Choose available appointment slot">
-            <option [ngValue]="null" disabled>-- Choose Available Slot --</option>
-            <option *ngFor="let s of availableSlots" [ngValue]="s.id">
-              {{ s.day }} ({{ s.time_slot }})
-            </option>
-          </select>
-        </div>
-
-        <button class="btn btn-book" (click)="bookSelectedSlot()" aria-label="Book selected appointment slot">Book Slot</button>
-      </div>
-
-      <div *ngIf="bookingMessage" role="alert" aria-live="assertive" [class]="'alert-box ' + (bookingSuccess ? 'alert-success' : 'alert-error')">
-        {{ bookingMessage }}
-      </div>
-
-      <!-- Confirmed Bookings for This Patient & Single-Click Cancellation -->
-      <div class="active-bookings-tray" *ngIf="bookedSlotsForPatient.length > 0" role="region" aria-label="Confirmed appointments">
-        <h4>My Confirmed Bookings:</h4>
-        <div class="chips-container">
-          <div *ngFor="let s of bookedSlotsForPatient" class="booking-chip">
-            <div class="chip-text">
-              <strong>{{ s.day }}</strong> at <span>{{ s.time_slot }}</span> (Doctor: {{ s.doctor_id }})
+      <!-- Practo-Style Consultations List -->
+      <div class="practo-appointments-list" *ngIf="userAppointments().length > 0; else emptyAppointmentsTemplate">
+        <div *ngFor="let appt of userAppointments()" class="practo-appointment-card" [class.cancelled-card]="appt.status === 'Cancelled'">
+          <div class="appt-card-header">
+            <div class="appt-type-indicator">
+              <span *ngIf="appt.consultationType === 'video'" class="consult-type-pill video-pill">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 10l5-5v14l-5-5z"/><rect x="2" y="5" width="13" height="14" rx="2"/></svg>
+                Video Consultation
+              </span>
+              <span *ngIf="appt.consultationType === 'in-person'" class="consult-type-pill inperson-pill">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                In-Person Visit
+              </span>
+              <span class="appt-id-pill" *ngIf="appt.id">Ref: {{ appt.id }}</span>
             </div>
-            <button class="btn-cancel" (click)="cancelAppointment(s.id)" [attr.aria-label]="'Cancel appointment on ' + s.day + ' at ' + s.time_slot">Cancel Booking</button>
+            <div class="appt-status-wrapper">
+              <span class="appt-status-pill" [class]="'status-' + appt.status.toLowerCase()">
+                {{ appt.status }}
+              </span>
+            </div>
+          </div>
+
+          <div class="appt-card-body">
+            <div class="doctor-profile-section">
+              <img 
+                [src]="appt.doctorAvatar || 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=300&auto=format&fit=crop&q=80'" 
+                (error)="onDocImgError($event)"
+                [alt]="appt.doctorName" 
+                class="doctor-thumb" 
+              />
+              <div class="doctor-details">
+                <h4 class="doctor-name">{{ appt.doctorName }}</h4>
+                <p class="doctor-spec">{{ appt.doctorSpecialization }}</p>
+                <p class="clinic-location">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                  <span>{{ appt.doctorClinic || 'Healio Super-Specialty Medical Center' }}</span>
+                </p>
+              </div>
+            </div>
+
+            <div class="schedule-chips-block">
+              <div class="schedule-chip date-chip">
+                <span class="chip-label">Date</span>
+                <strong class="chip-value">📅 {{ appt.date }}</strong>
+              </div>
+              <div class="schedule-chip time-chip">
+                <span class="chip-label">Time Slot</span>
+                <strong class="chip-value">⏰ {{ appt.timeSlot }}</strong>
+              </div>
+              <div class="schedule-chip fee-chip" *ngIf="appt.fee">
+                <span class="chip-label">Consultation Fee</span>
+                <strong class="chip-value">₹{{ appt.fee }}</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="appt-card-footer">
+            <div class="footer-patient-tag">
+              Patient: <strong>{{ appt.patientName }}</strong>
+            </div>
+
+            <div class="appt-actions-row">
+              <!-- Contextual Action CTA -->
+              <a 
+                *ngIf="appt.consultationType === 'video' && appt.status !== 'Cancelled'" 
+                [href]="appt.meetingLink || 'https://meet.google.com/new'" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                class="btn-action-primary btn-join-call"
+                aria-label="Join video consultation">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 10l5-5v14l-5-5z"/><rect x="2" y="5" width="13" height="14" rx="2"/></svg>
+                <span>Join Video Call</span>
+              </a>
+
+              <button 
+                *ngIf="appt.consultationType === 'in-person' && appt.status !== 'Cancelled'" 
+                type="button" 
+                (click)="openClinicDetails(appt)" 
+                class="btn-action-primary btn-view-clinic"
+                aria-label="Clinic Directions and View Details">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                <span>Clinic Directions / View Details</span>
+              </button>
+
+              <button 
+                *ngIf="appt.status !== 'Cancelled' && appt.status !== 'Completed'" 
+                type="button" 
+                (click)="cancelConsultation(appt)" 
+                class="btn-action-secondary btn-cancel-appt"
+                [attr.aria-label]="'Cancel consultation with ' + appt.doctorName">
+                Cancel
+              </button>
+
+              <span *ngIf="appt.status === 'Cancelled'" class="cancelled-notice">
+                Consultation Cancelled
+              </span>
+            </div>
           </div>
         </div>
       </div>
+
+      <!-- Empty State Illustration / Banner -->
+      <ng-template #emptyAppointmentsTemplate>
+        <div class="empty-appointments-banner">
+          <div class="empty-icon-circle">
+            <svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="#0E9F6E" stroke-width="1.8">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+              <line x1="16" y1="2" x2="16" y2="6"/>
+              <line x1="8" y1="2" x2="8" y2="6"/>
+              <line x1="3" y1="10" x2="21" y2="10"/>
+              <path d="M9 16l2 2 4-4"/>
+            </svg>
+          </div>
+          <h4>No Scheduled Consultations</h4>
+          <p>You don't have any upcoming doctor appointments scheduled yet. Book an in-person clinic visit or instant video consultation with top specialists.</p>
+          <div class="empty-cta-group">
+            <a routerLink="/home" class="btn-primary-portal">+ Book New Consultation</a>
+            <a routerLink="/home" class="btn-secondary-portal">Browse Available Doctors</a>
+          </div>
+        </div>
+      </ng-template>
     </section>
 
     <!-- DEDICATED PRESCRIPTION CARDS (SYNCHRONIZED REACTIVELY VIA PRESCRIPTION SERVICE) -->
@@ -274,4 +333,59 @@
       </div>
     </section>
   </main>
+
+  <!-- CLINIC DIRECTIONS & DETAILS MODAL -->
+  <div *ngIf="selectedAppointmentDetails() as appt" class="modal-backdrop" (click)="closeClinicDetails()" role="dialog" aria-modal="true">
+    <div class="modal-sheet" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-header-text">
+          <h3>In-Person Clinic Visit Details</h3>
+          <p>Booking Reference: <strong>{{ appt.id }}</strong></p>
+        </div>
+        <button type="button" class="btn-close-modal" (click)="closeClinicDetails()" aria-label="Close modal">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="modal-doc-summary">
+          <img 
+            [src]="appt.doctorAvatar || 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=300&auto=format&fit=crop&q=80'" 
+            (error)="onDocImgError($event)" 
+            [alt]="appt.doctorName" 
+            class="modal-doc-thumb" 
+          />
+          <div>
+            <h4>{{ appt.doctorName }}</h4>
+            <p class="modal-doc-spec">{{ appt.doctorSpecialization }}</p>
+            <span class="consult-type-pill inperson-pill">🏥 In-Person Consultation</span>
+          </div>
+        </div>
+
+        <div class="clinic-details-card">
+          <h5>Clinic & Facility Location</h5>
+          <p class="clinic-title">🏥 {{ appt.doctorClinic || 'Healio Super-Specialty Medical Center' }}</p>
+          <p class="clinic-address">📍 Building 4B, Health City Avenue, Medical District, Suite 302</p>
+          <p class="clinic-timing">🕒 Reporting Time: 15 minutes before <strong>{{ appt.timeSlot }}</strong></p>
+          <div class="map-link-container">
+            <a [href]="'https://www.google.com/maps/search/?api=1&query=' + (appt.doctorClinic || 'Healio Medical Center')" target="_blank" rel="noopener noreferrer" class="btn-map-directions">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+              <span>Open in Google Maps</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="visit-instructions">
+          <h5>Patient Preparation Checklist</h5>
+          <ul>
+            <li>Carry a valid government photo ID and your Healio Patient ID (<strong>{{ patientId }}</strong>).</li>
+            <li>Bring physical copies or previous lab reports relevant to your consultation.</li>
+            <li>Free covered patient parking is available at Basement Level 1.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-modal-close" (click)="closeClinicDetails()">Close</button>
+      </div>
+    </div>
+  </div>
 </div>

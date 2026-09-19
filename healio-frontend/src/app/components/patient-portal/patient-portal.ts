@@ -6,6 +6,7 @@ import {
   ClinicalService, 
   Patient, 
   AppointmentSlot, 
+  AppointmentRecord,
   Consultation, 
   Prescription 
 } from '../../services/clinical.service';
@@ -37,23 +38,19 @@ export class PatientPortalComponent implements OnInit {
     return this.prescriptionService.getPrescriptionsForPatient(this.patientId);
   });
 
-  slots: AppointmentSlot[] = [];
+  // Practo-Style Reactive Consultations State
+  userAppointments = computed(() => {
+    const userEmail = (this.authService.currentUser()?.email || this.currentUser?.email || '').toLowerCase().trim();
+    const all = this.clinicalService.appointments();
+    if (!userEmail) return all;
+    const filtered = all.filter(a => a.patientEmail.toLowerCase().trim() === userEmail);
+    if (filtered.length > 0) return filtered;
+    return all.filter(a => a.patientEmail === 'patient@healio.health');
+  });
+
+  selectedAppointmentDetails = signal<AppointmentRecord | null>(null);
   patientPrescriptions: Prescription[] = [];
   patientConsultations: Consultation[] = [];
-
-  doctorId: string = 'DOC-CARD-001';
-  selectedSlotId: number | null = null;
-  bookingMessage: string = '';
-  bookingSuccess: boolean = false;
-
-  days: string[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-  timeSlots: string[] = [
-    '09:00 AM - 10:00 AM',
-    '10:00 AM - 11:00 AM',
-    '11:00 AM - 12:00 PM',
-    '12:00 PM - 01:00 PM',
-    '01:00 PM - 02:00 PM'
-  ];
 
   ngOnInit(): void {
     this.currentUser = this.authService.getUser();
@@ -72,8 +69,6 @@ export class PatientPortalComponent implements OnInit {
       }
     });
 
-    // Immediately trigger fetchSlots() to populate the grid without delay
-    this.fetchSlots();
     this.fetchPatientRecord();
   }
 
@@ -81,14 +76,26 @@ export class PatientPortalComponent implements OnInit {
     this.prescriptionService.printPrescriptionSlip(rx);
   }
 
-  fetchSlots(): void {
-    this.clinicalService.getSlots().subscribe({
-      next: (data: AppointmentSlot[]) => {
-        this.slots = [...data];
-        this.cdr.detectChanges();
-      },
-      error: (err: any) => console.error('Failed to load appointment slots', err)
-    });
+  openClinicDetails(appt: AppointmentRecord): void {
+    this.selectedAppointmentDetails.set(appt);
+  }
+
+  closeClinicDetails(): void {
+    this.selectedAppointmentDetails.set(null);
+  }
+
+  cancelConsultation(appt: AppointmentRecord): void {
+    if (!appt.id) return;
+    const confirmCancel = confirm(`Are you sure you want to cancel your consultation with ${appt.doctorName} on ${appt.date} at ${appt.timeSlot}?`);
+    if (!confirmCancel) return;
+
+    this.clinicalService.cancelAppointmentRecord(appt.id);
+    this.cdr.detectChanges();
+  }
+
+  onDocImgError(event: Event): void {
+    const target = event.target as HTMLImageElement;
+    target.src = 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=300&auto=format&fit=crop&q=80';
   }
 
   fetchPatientRecord(): void {
@@ -142,64 +149,7 @@ export class PatientPortalComponent implements OnInit {
     });
   }
 
-  get availableSlots(): AppointmentSlot[] {
-    return this.slots.filter((s) => s.status === 'Available');
-  }
 
-  get bookedSlotsForPatient(): AppointmentSlot[] {
-    if (!this.patientId) return [];
-    return this.slots.filter((s) => s.status === 'Booked' && s.patient === this.patientId);
-  }
-
-  getSlot(day: string, time: string): AppointmentSlot | undefined {
-    return this.slots.find((s) => s.day === day && s.time_slot === time);
-  }
-
-  bookSelectedSlot(): void {
-    if (!this.patientId) {
-      this.bookingMessage = 'Please ensure you are signed in with an active patient ID.';
-      this.bookingSuccess = false;
-      return;
-    }
-
-    if (!this.selectedSlotId) {
-      this.bookingMessage = 'Please select an available appointment slot.';
-      this.bookingSuccess = false;
-      return;
-    }
-
-    this.clinicalService.bookSlot(this.selectedSlotId, this.patientId).subscribe({
-      next: (updatedSlot: AppointmentSlot) => {
-        this.slots = this.slots.map((s) => (s.id === updatedSlot.id ? updatedSlot : s));
-        this.bookingSuccess = true;
-        this.bookingMessage = `Confirmed: ${updatedSlot.day} (${updatedSlot.time_slot}) reserved for ${this.patientId}`;
-        this.selectedSlotId = null;
-        this.cdr.detectChanges();
-        setTimeout(() => (this.bookingMessage = ''), 4000);
-      },
-      error: (err: any) => {
-        this.bookingSuccess = false;
-        this.bookingMessage = err.error?.error || 'Failed to book slot.';
-      }
-    });
-  }
-
-  cancelAppointment(slotId: number): void {
-    if (!confirm('Cancel this appointment? The slot will be returned to Available.')) return;
-
-    this.clinicalService.cancelSlot(slotId, this.patientId).subscribe({
-      next: (releasedSlot: AppointmentSlot) => {
-        this.slots = this.slots.map((s) =>
-          s.id === releasedSlot.id ? { ...releasedSlot, patient: null, status: 'Available' } : s
-        );
-        this.bookingSuccess = true;
-        this.bookingMessage = `Appointment cancelled. Slot restored.`;
-        this.cdr.detectChanges();
-        setTimeout(() => (this.bookingMessage = ''), 4000);
-      },
-      error: (err: any) => alert('Cancellation failed: ' + JSON.stringify(err.error))
-    });
-  }
 
   printPrescriptionSlip(): void {
     window.print();
