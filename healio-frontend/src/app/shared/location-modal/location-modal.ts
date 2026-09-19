@@ -45,7 +45,7 @@ export class LocationModalComponent implements OnInit, AfterViewInit, OnDestroy 
   }
 
   private initMap() {
-    if (!this.mapContainer) return;
+    if (this.map || !this.mapContainer?.nativeElement) return;
 
     this.map = L.map(this.mapContainer.nativeElement, {
       center: [this.currentLat, this.currentLng],
@@ -92,7 +92,8 @@ export class LocationModalComponent implements OnInit, AfterViewInit, OnDestroy 
       () => {
         alert('Could not retrieve GPS location.');
         this.isLocating.set(false);
-      }
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
   }
 
@@ -118,14 +119,65 @@ export class LocationModalComponent implements OnInit, AfterViewInit, OnDestroy 
     }
   }
 
+  private formatGranularAddress(data: any): { label: string; display: string } {
+    if (!data || !data.address) {
+      return { label: 'Bangalore', display: 'Selected Location' };
+    }
+    const a = data.address;
+    // Priority hierarchy: suburb > neighbourhood > town > village
+    const locality =
+      a.suburb ||
+      a.neighbourhood ||
+      a.town ||
+      a.village ||
+      a.quarter ||
+      a.residential ||
+      a.hamlet ||
+      a.city_district ||
+      a.subdistrict ||
+      a.borough ||
+      '';
+
+    let district = '';
+    if (locality && a.city && a.city.toLowerCase() !== locality.toLowerCase()) {
+      district = a.city;
+    } else {
+      district =
+        a.county ||
+        a.state_district ||
+        a.district ||
+        a.state ||
+        '';
+    }
+
+    let label = '';
+    if (
+      locality &&
+      district &&
+      locality.toLowerCase() !== district.toLowerCase() &&
+      !district.toLowerCase().includes(locality.toLowerCase()) &&
+      !locality.toLowerCase().includes(district.toLowerCase())
+    ) {
+      label = `${locality}, ${district}`;
+    } else if (locality) {
+      label = locality;
+    } else if (district) {
+      label = district;
+    } else {
+      label = 'Bangalore';
+    }
+
+    const display = (data.display_name || '').split(',').slice(0, 3).join(',');
+    return { label, display: display || label };
+  }
+
   private async reverseGeocode(lat: number, lng: number) {
     try {
       const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
       const data = await res.json();
       if (data && data.address) {
-        const city = data.address.city || data.address.town || data.address.state_district || data.address.state || 'Bangalore';
-        const display = data.display_name.split(',').slice(0, 3).join(',');
-        this.selectedCityName.set(city);
+        const { label, display } = this.formatGranularAddress(data);
+        this.selectedCityName.set(label);
         this.selectedAddress.set(display);
       }
     } catch {

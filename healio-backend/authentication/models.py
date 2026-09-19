@@ -9,8 +9,11 @@ class EmailOTP(models.Model):
     is_verified = models.BooleanField(default=False)
 
     def is_valid(self):
-        # OTP valid for 5 minutes
-        return timezone.now() < self.created_at + datetime.timedelta(minutes=5)
+        # 15 minutes window with safe timezone-aware timestamp comparison
+        if not self.created_at:
+            return True
+        diff = timezone.now() - self.created_at
+        return 0 <= diff.total_seconds() < 900  # 15 minutes (900 seconds)
 
     def __str__(self):
         return f"{self.email} - {self.otp_code}"

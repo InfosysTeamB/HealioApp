@@ -1,0 +1,555 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+  width: 100%;
+  container-type: inline-size;
+}
+
+.clinic-card {
+  background: #FFFFFF;
+  border: 1.5px solid #E2E8F0;
+  border-radius: 16px;
+  padding: 1.15rem;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.9rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  min-width: 0;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.clinic-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+  border-color: #CBD5E1;
+}
+
+.clinic-card.is-booked {
+  border-color: #0E9F6E;
+  background: linear-gradient(180deg, #FFFFFF 0%, #F0FDF4 100%);
+}
+
+/* Card Main - Doctor Profile Section */
+.card-main {
+  display: flex;
+  gap: 0.85rem;
+  align-items: flex-start;
+  min-width: 0;
+  width: 100%;
+}
+
+.avatar-wrap {
+  position: relative;
+  width: 62px;
+  height: 62px;
+  min-width: 62px;
+  min-height: 62px;
+  flex-shrink: 0;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #F1F5F9;
+  border: 1.5px solid #E2E8F0;
+}
+
+.doc-avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  object-fit: cover;
+  display: block;
+}
+
+.verified-badge {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 18px;
+  height: 18px;
+  background: #0E9F6E;
+  color: #FFF;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #FFF;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.verified-badge svg {
+  width: 10px;
+  height: 10px;
+}
+
+.details-wrap {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.22rem;
+  overflow: hidden;
+}
+
+.top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.doc-name {
+  margin: 0;
+  font-size: 1.02rem;
+  font-weight: 750;
+  color: #0F172A;
+  cursor: pointer;
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  outline: none;
+  transition: color 0.15s ease;
+}
+
+.doc-name:hover,
+.doc-name:focus-visible {
+  color: #0E9F6E;
+}
+
+.doc-name:focus-visible {
+  outline: 2px solid #0E9F6E;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.fee-badge {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #0E9F6E;
+  background: #ECFDF5;
+  border: 1px solid #A7F3D0;
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.specialty-text {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #64748B;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rating-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.05rem 0;
+}
+
+.star-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: #FEF08A;
+  color: #854D0E;
+  font-size: 0.75rem;
+  font-weight: 750;
+  padding: 0.12rem 0.45rem;
+  border-radius: 6px;
+}
+
+.star-pill svg {
+  width: 11px;
+  height: 11px;
+}
+
+.review-count {
+  font-size: 0.75rem;
+  color: #94A3B8;
+  font-weight: 500;
+}
+
+.clinic-location {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.76rem;
+  color: #475569;
+  background: #F8FAFC;
+  padding: 0.35rem 0.55rem;
+  border-radius: 8px;
+  margin-top: 0.15rem;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.loc-icon {
+  width: 14px;
+  height: 14px;
+  color: #0E9F6E;
+  flex-shrink: 0;
+}
+
+.clinic-info {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.clinic-info strong {
+  color: #1E293B;
+}
+
+.distance-pill {
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  color: #0E9F6E;
+  font-weight: 700;
+  white-space: nowrap;
+  background: #ECFDF5;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  border: 1px solid #A7F3D0;
+}
+
+/* Slots / Availability Section */
+.slots-container {
+  background: #FAFAF9;
+  border: 1px solid #F1F5F9;
+  border-radius: 12px;
+  padding: 0.65rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 76px;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.slots-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.76rem;
+  color: #475569;
+  width: 100%;
+  gap: 0.5rem;
+}
+
+.avail-indicator-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.avail-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.76rem;
+}
+
+.avail-indicator {
+  width: 8px;
+  height: 8px;
+  background: #10B981;
+  border-radius: 50%;
+  flex-shrink: 0;
+  animation: pulseSlot 2s infinite ease-in-out;
+}
+
+@keyframes pulseSlot {
+  0% { transform: scale(0.9); opacity: 0.8; }
+  50% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(0.9); opacity: 0.8; }
+}
+
+.slots-count-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.12rem 0.45rem;
+  border-radius: 12px;
+  background: #E2E8F0;
+  color: #475569;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.slots-count-badge.low-slots {
+  background: #FEF3C7;
+  color: #B45309;
+}
+
+.slot-chips {
+  display: flex;
+  gap: 0.45rem;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  width: 100%;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
+.slot-btn {
+  background: #FFFFFF;
+  border: 1.5px solid #E2E8F0;
+  border-radius: 8px;
+  min-height: 38px;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.slot-btn:hover {
+  border-color: #0E9F6E;
+  color: #0E9F6E;
+  background: #F0FDF4;
+}
+
+.slot-btn:focus-visible {
+  outline: 2px solid #0E9F6E;
+  outline-offset: 2px;
+}
+
+.slot-btn.active {
+  background: #0E9F6E;
+  border-color: #0E9F6E;
+  color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(14, 159, 110, 0.3);
+}
+
+.no-slots-notice {
+  font-size: 0.78rem;
+  color: #94A3B8;
+  font-style: italic;
+  padding: 0.3rem 0;
+}
+
+/* Optimistic Booked Lock Banner */
+.booked-lock-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: #ECFDF5;
+  border: 1px solid #A7F3D0;
+  border-radius: 8px;
+  padding: 0.55rem 0.85rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.lock-icon {
+  width: 18px;
+  height: 18px;
+  color: #0E9F6E;
+  flex-shrink: 0;
+}
+
+.lock-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.lock-text strong {
+  font-size: 0.82rem;
+  color: #065F46;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lock-text span {
+  font-size: 0.74rem;
+  color: #047857;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Footer Buttons */
+.card-footer {
+  display: flex;
+  gap: 0.65rem;
+  margin-top: auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.outline-btn {
+  flex: 1;
+  min-width: 0;
+  min-height: 42px;
+  background: #FFFFFF;
+  border: 1.5px solid #CBD5E1;
+  border-radius: 10px;
+  padding: 0.45rem 0.5rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.outline-btn:hover {
+  background: #F8FAFC;
+  border-color: #94A3B8;
+  color: #0F172A;
+}
+
+.outline-btn:focus-visible {
+  outline: 2px solid #0E9F6E;
+  outline-offset: 2px;
+}
+
+.primary-book-btn {
+  flex: 1.6;
+  min-width: 0;
+  min-height: 42px;
+  background: #0E9F6E;
+  border: none;
+  border-radius: 10px;
+  padding: 0.45rem 0.65rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #FFFFFF;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(14, 159, 110, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.primary-book-btn:hover:not(:disabled) {
+  background: #0b7f58;
+  box-shadow: 0 4px 12px rgba(14, 159, 110, 0.32);
+  transform: translateY(-1px);
+}
+
+.primary-book-btn:focus-visible {
+  outline: 2px solid #065F46;
+  outline-offset: 2px;
+}
+
+.primary-book-btn:disabled {
+  background: #E2E8F0;
+  color: #94A3B8;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.primary-book-btn.is-confirmed {
+  background: #065F46;
+  color: #ECFDF5;
+  cursor: default;
+  box-shadow: none;
+}
+
+/* =========================================================
+   RESPONSIVE CONTAINER & SCREEN QUERIES
+   ========================================================= */
+
+/* When the card itself is in a wide container (e.g. single column list view >= 700px),
+   gracefully expand to a 2-column Practo layout */
+@container (min-width: 700px) {
+  .clinic-card {
+    display: grid;
+    grid-template-columns: 1.35fr 1.15fr;
+    grid-template-rows: auto auto;
+    column-gap: 1.5rem;
+    row-gap: 0.85rem;
+    align-items: start;
+    padding: 1.35rem 1.5rem;
+  }
+
+  .card-main {
+    grid-column: 1 / 2;
+    grid-row: 1 / 3;
+    height: 100%;
+    align-items: flex-start;
+  }
+
+  .slots-container {
+    grid-column: 2 / 3;
+    grid-row: 1 / 2;
+    margin-top: 0;
+  }
+
+  .card-footer {
+    grid-column: 2 / 3;
+    grid-row: 2 / 3;
+    margin-top: 0;
+  }
+}
+
+/* Small mobile devices (< 440px) */
+@media (max-width: 440px) {
+  .clinic-card {
+    padding: 0.95rem;
+    gap: 0.75rem;
+  }
+
+  .avatar-wrap {
+    width: 52px;
+    height: 52px;
+    min-width: 52px;
+    min-height: 52px;
+  }
+
+  .doc-name {
+    font-size: 0.95rem;
+  }
+
+  .fee-badge {
+    font-size: 0.82rem;
+    padding: 0.1rem 0.4rem;
+  }
+
+  .card-footer {
+    gap: 0.5rem;
+  }
+
+  .outline-btn,
+  .primary-book-btn {
+    min-height: 40px;
+    font-size: 0.8rem;
+  }
+}

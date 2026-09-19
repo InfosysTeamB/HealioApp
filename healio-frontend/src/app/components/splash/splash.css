@@ -7,7 +7,7 @@
   overflow: hidden;
 }
 
-/* Container Layout */
+/* Container Layout - Fixed Viewport, Zero Scrollbar */
 .splash-container {
   width: 100vw;
   height: 100vh;
@@ -15,31 +15,31 @@
   flex-direction: column;
   justify-content: space-between;
   align-items: center;
-  padding: 2rem 1.5rem;
+  padding: 1rem 1.25rem 0.75rem;
   box-sizing: border-box;
-  position: relative;
+  overflow: hidden;
 }
 
-/* Brand Header - Vertically & Horizontally Centered on Splash */
+/* Brand Header */
 .brand-wrapper {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   width: 100%;
-  margin: auto 0; /* Centers HEALIO & Heartbeat vertically on the screen */
-  transition: all 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  margin: auto 0;
+  transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Shifts gracefully to the top when transitioning to the form card */
+/* Compact Brand on Form View - Prevents vertical push */
 .brand-wrapper.brand-compact {
-  margin: 0 0 1rem 0;
-  transform: scale(0.75) translateY(-10px);
+  margin: 0 0 0.25rem 0;
+  transform: scale(0.65) translateY(-6px);
 }
 
 .svg-stage {
-  width: 90%;
-  max-width: 680px;
+  width: 85%;
+  max-width: 540px;
   display: flex;
   justify-content: center;
 }
@@ -60,7 +60,7 @@
   stroke-dasharray: 450;
   stroke-dashoffset: 450;
   fill: transparent;
-  animation: 
+  animation:
     drawBorder 1.5s cubic-bezier(0.65, 0, 0.35, 1) forwards,
     floodColor 0.8s ease 1.3s forwards;
 }
@@ -88,10 +88,10 @@
 
 /* Sized Red ECG Pulse Line */
 .pulse-wrapper {
-  width: 90%;
-  max-width: 580px;
-  height: 60px;
-  margin-top: 2rem;
+  width: 85%;
+  max-width: 520px;
+  height: 50px;
+  margin-top: 1.25rem;
   display: flex;
   justify-content: center;
 }
@@ -101,24 +101,75 @@
   height: 100%;
 }
 
-/* Centered Form Card */
+/* Phase 1 Intro Elements */
+.splash-intro-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  animation: fadeIn 2.2s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
+  opacity: 0;
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.brand-tagline {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #334155;
+  text-align: center;
+  margin: 0;
+  max-width: 480px;
+  line-height: 1.4;
+}
+
+.intro-perks-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.65rem;
+}
+
+.intro-pill {
+  background: #FFFFFF;
+  border: 1px solid #A7F3D0;
+  color: #065F46;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  box-shadow: 0 2px 8px rgba(14, 159, 110, 0.08);
+}
+
+/* Centered Form Card (Phase 2) - Fitted for complete visibility */
 .auth-card {
   width: 90%;
-  max-width: 440px;
+  max-width: 420px;
   background: #FFFFFF;
-  border-radius: 20px;
-  padding: 2.2rem 2rem;
-  box-shadow: 0 16px 36px -10px rgba(15, 23, 42, 0.08);
+  border-radius: 18px;
+  padding: 1.35rem 1.6rem;
+  box-shadow: 0 12px 32px -8px rgba(15, 23, 42, 0.08);
   border: 1px solid #E2E8F0;
   box-sizing: border-box;
-  margin: auto 0; /* Keeps the card centered without overlapping header or footer */
-  animation: cardFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  margin: auto 0;
+  animation: cardFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes cardFadeIn {
   from {
     opacity: 0;
-    transform: translateY(18px);
+    transform: translateY(14px);
   }
   to {
     opacity: 1;
@@ -127,71 +178,76 @@
 }
 
 .card-icon-badge {
-  width: 48px;
-  height: 48px;
+  width: 38px;
+  height: 38px;
   background: #ECFDF5;
   color: #0E9F6E;
-  border-radius: 12px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 1.25rem;
+  margin: 0 auto 0.5rem;
 }
 
 .card-icon-badge svg {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
 }
 
 .card-title {
-  font-size: 1.6rem;
+  font-size: 1.35rem;
   font-weight: 800;
   color: #0F172A;
   text-align: center;
-  margin: 0 0 0.4rem;
+  margin: 0 0 0.2rem;
 }
 
 .card-subtitle {
-  font-size: 0.92rem;
+  font-size: 0.82rem;
   color: #64748B;
   text-align: center;
-  margin: 0 0 1.8rem;
-  line-height: 1.45;
+  margin: 0 0 0.9rem;
+  line-height: 1.35;
 }
 
 /* Inputs & Form */
 .auth-form {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 0.65rem;
 }
 
 .input-field-group {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.25rem;
 }
 
 .input-label {
-  font-size: 0.75rem;
-  font-weight: 700;
+  font-size: 0.68rem;
+  font-weight: 750;
   color: #475569;
   letter-spacing: 0.05em;
 }
 
-.email-input {
+.form-input {
   width: 100%;
-  padding: 0.85rem 1rem;
-  font-size: 0.95rem;
+  padding: 0.58rem 0.8rem;
+  font-size: 0.88rem;
   border: 1.5px solid #CBD5E1;
-  border-radius: 10px;
+  border-radius: 9px;
   outline: none;
   color: #1E293B;
   box-sizing: border-box;
   transition: border-color 0.2s;
 }
 
-.email-input:focus {
+.form-input::placeholder {
+  color: #94A3B8;
+  font-weight: 400;
+}
+
+.form-input:focus {
   border-color: #0E9F6E;
   box-shadow: 0 0 0 3px rgba(14, 159, 110, 0.15);
 }
@@ -199,11 +255,11 @@
 /* Action Buttons */
 .submit-btn {
   width: 100%;
-  padding: 0.9rem;
-  border-radius: 10px;
+  padding: 0.72rem;
+  border-radius: 9px;
   border: none;
-  font-size: 1rem;
-  font-weight: 700;
+  font-size: 0.9rem;
+  font-weight: 750;
   cursor: pointer;
   background-color: #0E9F6E;
   color: #FFFFFF;
@@ -211,12 +267,13 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  margin-top: 0.35rem;
 }
 
 .submit-btn:disabled {
-  background-color: #94A3B8;
+  background-color: #CBD5E1;
+  color: #64748B;
   cursor: not-allowed;
-  opacity: 0.7;
 }
 
 .submit-btn:not(:disabled):hover {
@@ -228,10 +285,10 @@
   background: none;
   border: none;
   color: #64748B;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.4rem;
   padding: 0;
 }
 
@@ -239,42 +296,101 @@
   color: #0E9F6E;
 }
 
-/* OTP 6-Box Grid */
+/* Alerts */
+.otp-error-alert {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  color: #B91C1C;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  line-height: 1.3;
+}
+
+.otp-error-alert svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  stroke: #DC2626;
+}
+
+.otp-success-alert {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #F0FDF4;
+  border: 1px solid #A7F3D0;
+  color: #065F46;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  line-height: 1.3;
+}
+
+.otp-success-alert svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  stroke: #0E9F6E;
+}
+
+.alert-msg {
+  flex: 1;
+}
+
+.alert-dismiss-btn {
+  background: none;
+  border: none;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.65;
+}
+
+/* OTP 4-Box Grid */
 .otp-inputs-grid {
   display: flex;
-  justify-content: space-between;
-  gap: 0.5rem;
-  margin-bottom: 1.5rem;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
 }
 
 .otp-box {
-  width: 48px;
-  height: 54px;
+  width: 50px;
+  height: 52px;
   text-align: center;
   font-size: 1.4rem;
   font-weight: 800;
-  border: 1.5px solid #CBD5E1;
+  border: 2px solid #CBD5E1;
   border-radius: 10px;
   outline: none;
-  color: #0F172A;
+  color: #0E9F6E;
   background: #F8FAFC;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: all 0.2s ease;
 }
 
 .otp-box:focus {
   background: #FFFFFF;
   border-color: #0E9F6E;
-  box-shadow: 0 0 0 3px rgba(14, 159, 110, 0.15);
+  box-shadow: 0 0 0 3px rgba(14, 159, 110, 0.18);
 }
 
 /* Timer & Resend */
 .resend-wrapper {
-  margin-top: 1.25rem;
+  margin-top: 0.75rem;
   text-align: center;
 }
 
 .timer-text {
-  font-size: 0.85rem;
+  font-size: 0.78rem;
   color: #64748B;
   margin: 0;
 }
@@ -284,44 +400,51 @@
   border: none;
   color: #0E9F6E;
   font-weight: 700;
-  font-size: 0.85rem;
+  font-size: 0.78rem;
   cursor: pointer;
 }
 
-.resend-link:hover {
+.resend-link:hover:not(:disabled) {
   text-decoration: underline;
+}
+
+.resend-link:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 /* Loading Spinner */
 .spinner {
-  width: 18px;
-  height: 18px;
-  border: 2.5px solid rgba(255, 255, 255, 0.35);
+  width: 16px;
+  height: 16px;
+  border: 2.2px solid rgba(255, 255, 255, 0.35);
   border-radius: 50%;
   border-top-color: #FFFFFF;
   animation: spin 0.75s linear infinite;
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-/* Prominent Footer Quote */
+/* Footer Quote */
 .compliance-footer {
   width: 100%;
   text-align: center;
-  padding-top: 1rem;
+  padding: 0.4rem 0 0;
 }
 
 .quote-text {
   display: inline-block;
-  font-size: 1.15rem;
+  font-size: 0.88rem;
   font-weight: 600;
-  letter-spacing: 0.03em;
-  color: #1E3A2F; /* Deep medical forest green for crisp contrast */
+  letter-spacing: 0.02em;
+  color: #1E3A2F;
   font-style: italic;
   position: relative;
-  padding: 0 1.25rem;
+  padding: 0 0.85rem;
 }
 
 .quote-text::before,
@@ -329,15 +452,16 @@
   content: "";
   position: absolute;
   top: 50%;
-  width: 32px;
+  width: 20px;
   height: 1.5px;
   background: rgba(14, 159, 110, 0.35);
 }
 
 .quote-text::before {
-  left: -28px;
+  left: -16px;
 }
 
 .quote-text::after {
-  right: -28px;
+  right: -16px;
 }
+

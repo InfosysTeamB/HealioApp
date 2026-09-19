@@ -126,11 +126,11 @@ def log_patient_creation(sender, instance, created, **kwargs):
 @receiver(pre_save, sender=AppointmentSlot)
 def track_slot_previous_state(sender, instance, **kwargs):
     if instance.pk:
-        try:
-            prev = AppointmentSlot.objects.get(pk=instance.pk)
+        prev = AppointmentSlot.objects.filter(pk=instance.pk).first()
+        if prev:
             instance._prev_status = prev.status
             instance._prev_patient_id = prev.patient.patient_id if prev.patient else None
-        except AppointmentSlot.DoesNotExist:
+        else:
             instance._prev_status = None
             instance._prev_patient_id = None
     else:

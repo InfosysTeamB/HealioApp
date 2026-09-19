@@ -88,12 +88,15 @@
   font-size: 0.88rem;
   font-weight: 600;
   padding: 0.45rem 1rem;
+  min-height: 44px;
   border-radius: 8px;
   background: #ffffff;
   border: 1.5px solid #cbd5e1;
   margin-left: 1.5rem;
   transition: all 0.2s ease;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .logout-btn:hover {
@@ -480,6 +483,7 @@
 .table-container {
   overflow-x: auto;
   margin-bottom: 1.5rem;
+  -webkit-overflow-scrolling: touch;
 }
 
 .slot-table {
@@ -559,6 +563,7 @@
 .control-group input,
 .control-group select {
   padding: 0.65rem 0.8rem;
+  min-height: 44px;
   border: 1px solid #cbd5e1;
   border-radius: 6px;
   font-size: 0.9rem;
@@ -576,6 +581,10 @@
   background-color: #0E9F6E;
   color: #ffffff;
   padding: 0.68rem 1.6rem;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn-book:hover {
@@ -702,6 +711,258 @@
   border: 1px solid #fecaca;
 }
 
+/* Navigation Tabs Bar */
+.portal-nav-tabs {
+  display: flex;
+  gap: 0.6rem;
+  margin-bottom: 1.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.pnav-tab {
+  background: #FFFFFF;
+  border: 1.5px solid #E2E8F0;
+  color: #475569;
+  font-size: 0.88rem;
+  font-weight: 700;
+  padding: 0.55rem 1.15rem;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.pnav-tab:hover {
+  border-color: #0E9F6E;
+  color: #0E9F6E;
+  background: #F0FDF4;
+}
+
+.pnav-tab.active {
+  background: #0E9F6E;
+  border-color: #0E9F6E;
+  color: #FFFFFF;
+  box-shadow: 0 4px 12px rgba(14, 159, 110, 0.25);
+}
+
+/* Rich Prescription Cards */
+.prescription-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.rich-prescription-card {
+  background: #FFFFFF;
+  border: 1.5px solid #E2E8F0;
+  border-radius: 14px;
+  padding: 1.25rem 1.4rem;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  transition: border-color 0.2s ease;
+}
+
+.rich-prescription-card:hover {
+  border-color: #0E9F6E;
+}
+
+.rx-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid #F1F5F9;
+  flex-wrap: wrap;
+}
+
+.rx-doctor-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.rx-doctor-avatar {
+  width: 44px;
+  height: 44px;
+  background: #ECFDF5;
+  border-radius: 12px;
+  border: 1.5px solid #A7F3D0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+}
+
+.rx-doc-name {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #0F172A;
+}
+
+.rx-doc-clinic {
+  margin: 0.15rem 0 0;
+  font-size: 0.8rem;
+  color: #64748B;
+}
+
+.rx-meta-pill-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.rx-id-badge {
+  background: #F1F5F9;
+  border: 1px solid #CBD5E1;
+  color: #334155;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.25rem 0.65rem;
+  border-radius: 6px;
+  letter-spacing: 0.02em;
+}
+
+.rx-date-badge {
+  background: #ECFDF5;
+  border: 1px solid #A7F3D0;
+  color: #065F46;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.25rem 0.65rem;
+  border-radius: 6px;
+}
+
+.rx-diagnosis-row {
+  margin: 0.9rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.88rem;
+}
+
+.diagnosis-label {
+  color: #64748B;
+  font-weight: 600;
+}
+
+.diagnosis-val {
+  color: #0E9F6E;
+  font-weight: 750;
+}
+
+.rx-medicines-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  margin-bottom: 0.9rem;
+}
+
+.rx-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+  text-align: left;
+}
+
+.rx-table th {
+  background: #F8FAFC;
+  color: #475569;
+  font-weight: 700;
+  padding: 0.65rem 0.85rem;
+  border-bottom: 1.5px solid #E2E8F0;
+}
+
+.rx-table td {
+  padding: 0.65rem 0.85rem;
+  border-bottom: 1px solid #F1F5F9;
+  color: #1E293B;
+}
+
+.med-name-cell {
+  font-weight: 750;
+  color: #0F172A;
+}
+
+.dosage-badge {
+  background: #ECFDF5;
+  color: #065F46;
+  font-weight: 750;
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+  display: inline-block;
+}
+
+.rx-advice-callout {
+  background: #F8FAFC;
+  border-left: 3.5px solid #0E9F6E;
+  padding: 0.65rem 0.95rem;
+  border-radius: 0 8px 8px 0;
+  margin-bottom: 0.9rem;
+  font-size: 0.84rem;
+}
+
+.rx-advice-callout strong {
+  color: #0F172A;
+  display: block;
+  margin-bottom: 0.2rem;
+}
+
+.rx-advice-callout p {
+  margin: 0;
+  color: #475569;
+}
+
+.rx-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #F1F5F9;
+  flex-wrap: wrap;
+}
+
+.rx-followup {
+  font-size: 0.84rem;
+  color: #065F46;
+}
+
+.btn-download-rx {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: #0E9F6E;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 8px;
+  padding: 0.55rem 1rem;
+  font-size: 0.84rem;
+  font-weight: 750;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-download-rx:hover {
+  background: #057A55;
+  box-shadow: 0 4px 12px rgba(14, 159, 110, 0.2);
+}
+
+.empty-prescriptions-box {
+  padding: 2rem;
+  text-align: center;
+  background: #F8FAFC;
+  border-radius: 10px;
+  border: 1px dashed #CBD5E1;
+  color: #64748B;
+}
+
 @media (max-width: 900px) {
   .portal-header {
     flex-direction: column;
@@ -724,6 +985,39 @@
   .history-grid {
     grid-template-columns: 1fr;
   }
+  .booking-strip {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .control-group, .control-group.flex-2 {
+    width: 100%;
+    min-width: 100%;
+  }
+  .btn-book {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .portal-wrapper {
+    padding: 1rem 0.75rem 3rem;
+  }
+  .card {
+    padding: 1.15rem;
+  }
+  .identity-name-line {
+    gap: 0.5rem;
+  }
+}
+
+/* Accessibility Focus Visible Indicators */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+a:focus-visible,
+div[tabindex="0"]:focus-visible {
+  outline: 2px solid #0E9F6E;
+  outline-offset: 2px;
 }
 
 @media print {

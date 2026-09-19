@@ -11,7 +11,7 @@
 
 .modal-sheet {
   width: 100%;
-  max-width: 540px;
+  max-width: min(540px, 96vw);
   background: #FFFFFF;
   border-radius: 24px 24px 0 0;
   padding: 1.25rem 1.5rem 1.8rem;
@@ -57,12 +57,24 @@
 .close-btn {
   background: #F1F5F9;
   border: none;
-  width: 32px;
-  height: 32px;
+  min-width: 44px;
+  min-height: 44px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   cursor: pointer;
   color: #64748B;
   font-weight: 700;
+  font-size: 1.1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.close-btn:hover {
+  background: #E2E8F0;
+  color: #0F172A;
 }
 
 .search-box {
@@ -79,6 +91,7 @@
 .search-box svg {
   width: 18px;
   height: 18px;
+  flex-shrink: 0;
 }
 
 .search-box input {
@@ -87,6 +100,7 @@
   background: transparent;
   outline: none;
   font-size: 0.9rem;
+  min-height: 36px;
 }
 
 .search-action-btn {
@@ -95,9 +109,18 @@
   border: none;
   border-radius: 8px;
   padding: 0.45rem 0.85rem;
+  min-height: 40px;
   font-weight: 700;
   font-size: 0.8rem;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease;
+}
+
+.search-action-btn:hover {
+  background: #057A55;
 }
 
 .gps-btn {
@@ -107,17 +130,24 @@
   background: #ECFDF5;
   border: 1px solid #A7F3D0;
   padding: 0.6rem 0.9rem;
+  min-height: 44px;
   border-radius: 10px;
   font-size: 0.85rem;
   font-weight: 700;
   color: #065F46;
   cursor: pointer;
   margin-bottom: 1rem;
+  transition: background 0.15s ease;
+}
+
+.gps-btn:hover {
+  background: #D1FAE5;
 }
 
 .gps-btn svg {
   width: 18px;
   height: 18px;
+  flex-shrink: 0;
 }
 
 .map-wrapper {
@@ -179,12 +209,24 @@
   border: none;
   border-radius: 12px;
   padding: 0.75rem 1.25rem;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font-weight: 800;
   font-size: 0.9rem;
   cursor: pointer;
   white-space: nowrap;
+  transition: background 0.15s ease;
 }
 
 .confirm-btn:hover {
   background: #057A55;
+}
+
+/* Accessibility Focus States */
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid #0E9F6E;
+  outline-offset: 2px;
 }

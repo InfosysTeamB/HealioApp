@@ -1,22 +1,22 @@
 <div class="portal-wrapper">
   <!-- Minimalist Header -->
-  <header class="portal-header">
+  <header class="portal-header" role="banner">
     <div class="brand">
-      <img src="/logo.png" alt="Healio" class="logo" />
+      <img src="/logo.png" alt="Healio logo" class="logo" />
       <h2 class="portal-title">Patient Portal</h2>
     </div>
 
     <div class="header-action-area">
       <span class="portal-role-pill">Patient Workspace</span>
-      <a routerLink="/home" class="logout-btn">Log Out</a>
+      <button type="button" class="logout-btn" (click)="logout()" aria-label="Sign out of patient account and return to splash screen">Sign Out</button>
     </div>
   </header>
 
   <!-- Clean, Compact Patient Context Banner -->
-  <section class="patient-identity-banner">
+  <section class="patient-identity-banner" aria-label="Verified Patient Clinical Profile">
     <div class="identity-profile-left">
-      <div class="avatar-badge">
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+      <div class="avatar-badge" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
           <circle cx="12" cy="7" r="4"/>
         </svg>
@@ -46,30 +46,66 @@
 
     <div class="identity-status-right">
       <span class="status-pill registered">
-        <span class="status-indicator-dot"></span>
+        <span class="status-indicator-dot" aria-hidden="true"></span>
         Verified Clinical Profile
       </span>
     </div>
   </section>
 
+  <!-- Portal Navigation Tabs -->
+  <nav class="portal-nav-tabs" role="tablist" aria-label="Patient workspace views">
+    <button 
+      type="button" 
+      role="tab" 
+      class="pnav-tab" 
+      [class.active]="activePortalTab() === 'all'" 
+      (click)="activePortalTab.set('all')">
+      <span>Overview</span>
+    </button>
+    <button 
+      type="button" 
+      role="tab" 
+      class="pnav-tab" 
+      [class.active]="activePortalTab() === 'appointments'" 
+      (click)="activePortalTab.set('appointments')">
+      <span>📅 Appointments & Slots</span>
+    </button>
+    <button 
+      type="button" 
+      role="tab" 
+      class="pnav-tab" 
+      [class.active]="activePortalTab() === 'records'" 
+      (click)="activePortalTab.set('records')">
+      <span>📋 Clinical Notes</span>
+    </button>
+    <button 
+      type="button" 
+      role="tab" 
+      class="pnav-tab" 
+      [class.active]="activePortalTab() === 'prescriptions'" 
+      (click)="activePortalTab.set('prescriptions')">
+      <span>💊 Prescriptions ({{ fullPrescriptions().length }})</span>
+    </button>
+  </nav>
+
   <main class="portal-content">
     <!-- PRIMARY HERO CARD: WEEKLY APPOINTMENT TIMETABLE -->
-    <section class="card slot-card hero-card">
+    <section class="card slot-card hero-card" *ngIf="activePortalTab() === 'all' || activePortalTab() === 'appointments'" aria-labelledby="timetable-heading">
       <div class="card-title-row">
         <div>
-          <h3>Weekly Consultation Timetable & Appointment Booking</h3>
+          <h3 id="timetable-heading">Weekly Consultation Timetable & Appointment Booking</h3>
           <p class="card-subtext">Live synchronized with clinical scheduling database in PostgreSQL</p>
         </div>
         <span class="live-pill">Live Synced</span>
       </div>
 
       <!-- Weekly Schedule Grid -->
-      <div class="table-container">
-        <table class="slot-table">
+      <div class="table-container" role="region" tabindex="0" aria-label="Weekly appointment schedule table, scroll horizontally if needed">
+        <table class="slot-table" aria-label="Doctor consultation slots">
           <thead>
             <tr>
-              <th>Time Slot</th>
-              <th *ngFor="let day of days">{{ day }}</th>
+              <th scope="col">Time Slot</th>
+              <th scope="col" *ngFor="let day of days">{{ day }}</th>
             </tr>
           </thead>
           <tbody>
@@ -88,20 +124,20 @@
       </div>
 
       <!-- Booking Strip -->
-      <div class="booking-strip">
+      <div class="booking-strip" role="group" aria-label="Appointment booking controls">
         <div class="control-group">
-          <label>Your Patient ID:</label>
-          <input type="text" [value]="patientId || 'P-001'" readonly class="input-readonly highlight-pid" />
+          <label for="patient-id-input">Your Patient ID:</label>
+          <input id="patient-id-input" type="text" [value]="patientId || 'PT-88341'" readonly class="input-readonly highlight-pid" />
         </div>
 
         <div class="control-group">
-          <label>Doctor ID:</label>
-          <input type="text" [(ngModel)]="doctorId" readonly class="input-readonly" />
+          <label for="doctor-id-input">Doctor ID:</label>
+          <input id="doctor-id-input" type="text" [(ngModel)]="doctorId" readonly class="input-readonly" />
         </div>
 
         <div class="control-group flex-2">
-          <label>Available Slot:</label>
-          <select class="styled-select" [(ngModel)]="selectedSlotId">
+          <label for="slot-select">Available Slot:</label>
+          <select id="slot-select" class="styled-select" [(ngModel)]="selectedSlotId" aria-label="Choose available appointment slot">
             <option [ngValue]="null" disabled>-- Choose Available Slot --</option>
             <option *ngFor="let s of availableSlots" [ngValue]="s.id">
               {{ s.day }} ({{ s.time_slot }})
@@ -109,60 +145,131 @@
           </select>
         </div>
 
-        <button class="btn btn-book" (click)="bookSelectedSlot()">Book Slot</button>
+        <button class="btn btn-book" (click)="bookSelectedSlot()" aria-label="Book selected appointment slot">Book Slot</button>
       </div>
 
-      <div *ngIf="bookingMessage" [class]="'alert-box ' + (bookingSuccess ? 'alert-success' : 'alert-error')">
+      <div *ngIf="bookingMessage" role="alert" aria-live="assertive" [class]="'alert-box ' + (bookingSuccess ? 'alert-success' : 'alert-error')">
         {{ bookingMessage }}
       </div>
 
       <!-- Confirmed Bookings for This Patient & Single-Click Cancellation -->
-      <div class="active-bookings-tray" *ngIf="bookedSlotsForPatient.length > 0">
+      <div class="active-bookings-tray" *ngIf="bookedSlotsForPatient.length > 0" role="region" aria-label="Confirmed appointments">
         <h4>My Confirmed Bookings:</h4>
         <div class="chips-container">
           <div *ngFor="let s of bookedSlotsForPatient" class="booking-chip">
             <div class="chip-text">
               <strong>{{ s.day }}</strong> at <span>{{ s.time_slot }}</span> (Doctor: {{ s.doctor_id }})
             </div>
-            <button class="btn-cancel" (click)="cancelAppointment(s.id)">Cancel Booking</button>
+            <button class="btn-cancel" (click)="cancelAppointment(s.id)" [attr.aria-label]="'Cancel appointment on ' + s.day + ' at ' + s.time_slot">Cancel Booking</button>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- SECONDARY CARD: MEDICAL HISTORY & PRESCRIPTIONS -->
-    <section class="card history-card" *ngIf="patientPrescriptions.length > 0 || patientConsultations.length > 0">
+    <!-- DEDICATED PRESCRIPTION CARDS (SYNCHRONIZED REACTIVELY VIA PRESCRIPTION SERVICE) -->
+    <section class="card prescriptions-card" *ngIf="activePortalTab() === 'all' || activePortalTab() === 'prescriptions'" aria-labelledby="prescriptions-heading">
       <div class="card-title-row">
         <div>
-          <h3>My Clinical Records & Prescriptions</h3>
-          <p class="card-subtext">Authorized doctor consultations and digital prescription records</p>
+          <h3 id="prescriptions-heading">Active Clinical Prescriptions</h3>
+          <p class="card-subtext">Digitally verified and synchronized in real-time from your consulting physician</p>
         </div>
-        <button class="btn-print" (click)="printPrescriptionSlip()">Print Prescriptions</button>
+        <span class="live-pill">Live Rx Stream</span>
       </div>
 
-      <div class="history-grid">
-        <div class="history-col" *ngIf="patientPrescriptions.length > 0">
-          <h4>Issued Prescriptions</h4>
-          <div class="rx-stack">
-            <div *ngFor="let rx of patientPrescriptions" class="rx-card">
-              <div class="rx-title">
-                <strong>{{ rx.medication_name }}</strong>
-                <span class="badge-dosage">{{ rx.dosage }}</span>
-              </div>
-              <p>{{ rx.frequency }} ({{ rx.duration_days }} days)</p>
-            </div>
-          </div>
-        </div>
+      <div *ngIf="fullPrescriptions().length === 0" class="empty-prescriptions-box">
+        <p>No prescriptions have been issued for patient {{ patientId }} yet.</p>
+      </div>
 
-        <div class="history-col" *ngIf="patientConsultations.length > 0">
-          <h4>Consultation Records</h4>
-          <div class="consultation-stack">
-            <div *ngFor="let c of patientConsultations" class="consult-item">
-              <div class="consult-meta">{{ c.consultation_date | date:'mediumDate' }} | {{ c.doctor_id }}</div>
-              <p><strong>Complaint:</strong> {{ c.chief_complaint }}</p>
-              <p><strong>Diagnosis:</strong> {{ c.diagnosis }}</p>
+      <div class="prescription-cards-list">
+        @for (rx of fullPrescriptions(); track rx.id) {
+          <div class="rich-prescription-card">
+            <div class="rx-card-top">
+              <div class="rx-doctor-info">
+                <div class="rx-doctor-avatar">👨‍⚕️</div>
+                <div>
+                  <h4 class="rx-doc-name">{{ rx.doctorName }}</h4>
+                  <p class="rx-doc-clinic">{{ rx.doctorSpecialty }} • {{ rx.clinicName }}</p>
+                </div>
+              </div>
+              <div class="rx-meta-pill-group">
+                <span class="rx-id-badge">{{ rx.id }}</span>
+                <span class="rx-date-badge">📅 {{ rx.dateIssued }}</span>
+              </div>
+            </div>
+
+            <div class="rx-diagnosis-row">
+              <span class="diagnosis-label">Diagnosis:</span>
+              <strong class="diagnosis-val">{{ rx.diagnosis }}</strong>
+            </div>
+
+            <div class="rx-medicines-table-wrapper">
+              <table class="rx-table">
+                <thead>
+                  <tr>
+                    <th>Medication Name</th>
+                    <th>Dosage</th>
+                    <th>Frequency</th>
+                    <th>Duration</th>
+                    <th>Instructions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (m of rx.medicines; track m.name) {
+                    <tr>
+                      <td class="med-name-cell">💊 {{ m.name }}</td>
+                      <td><span class="dosage-badge">{{ m.dosage }}</span></td>
+                      <td class="freq-cell">{{ m.frequency }}</td>
+                      <td class="duration-cell">{{ m.duration }}</td>
+                      <td class="instructions-cell">{{ m.instructions }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            @if (rx.advice) {
+              <div class="rx-advice-callout">
+                <strong>Doctor's Advice:</strong>
+                <p>{{ rx.advice }}</p>
+              </div>
+            }
+
+            <div class="rx-card-footer">
+              <div class="rx-followup">
+                @if (rx.followUpDate) {
+                  <span>🗓️ Next Follow-Up: <strong>{{ rx.followUpDate }}</strong></span>
+                }
+              </div>
+              <button type="button" class="btn-download-rx" (click)="downloadPrescription(rx)" [attr.aria-label]="'Download prescription slip for ' + rx.id">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                <span>Download Prescription (PDF)</span>
+              </button>
             </div>
           </div>
+        }
+      </div>
+    </section>
+
+    <!-- SECONDARY CARD: CONSULTATION RECORDS & NOTES -->
+    <section class="card history-card" *ngIf="activePortalTab() === 'all' || activePortalTab() === 'records'" aria-labelledby="clinical-records-heading">
+      <div class="card-title-row">
+        <div>
+          <h3 id="clinical-records-heading">Consultation History & Clinical Notes</h3>
+          <p class="card-subtext">Clinical summaries from in-person and video consultations</p>
+        </div>
+        <button class="btn-print" (click)="printPrescriptionSlip()" aria-label="Print consultation records">Print Records</button>
+      </div>
+
+      <div class="consultation-stack">
+        <div *ngFor="let c of patientConsultations" class="consult-item">
+          <div class="consult-meta">{{ c.consultation_date | date:'mediumDate' }} | Doctor ID: {{ c.doctor_id }}</div>
+          <p><strong>Chief Complaint:</strong> {{ c.chief_complaint }}</p>
+          <p><strong>Diagnosis:</strong> {{ c.diagnosis }}</p>
+          <p *ngIf="c.clinical_notes"><strong>Clinical Notes:</strong> <em>{{ c.clinical_notes }}</em></p>
         </div>
       </div>
     </section>

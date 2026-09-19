@@ -1,9 +1,9 @@
 <div class="modal-backdrop" (click)="close.emit()">
-  <div class="chat-sheet" (click)="$event.stopPropagation()">
+  <div class="chat-sheet" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="aidoc-title">
     <!-- Header -->
     <div class="sheet-header">
       <div class="bot-profile">
-        <div class="bot-badge">
+        <div class="bot-badge" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M12 2a4 4 0 0 1 4 4v2h2a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2h2V6a4 4 0 0 1 4-4z"/>
             <circle cx="9" cy="13" r="1.25" fill="currentColor"/>
@@ -12,17 +12,17 @@
         </div>
         <div>
           <div class="bot-name">
-            <strong>AIDoc</strong>
-            <span class="online-dot"></span>
+            <strong id="aidoc-title">AIDoc</strong>
+            <span class="online-dot" aria-label="Online status"></span>
           </div>
           <small>Clinical Triage & Symptom Checker</small>
         </div>
       </div>
-      <button class="close-btn" (click)="close.emit()">✕</button>
+      <button class="close-btn" (click)="close.emit()" aria-label="Close AIDoc symptom checker dialog">✕</button>
     </div>
 
     <!-- Chat Messages Scroll Area -->
-    <div class="messages-area">
+    <div class="messages-area" role="log" aria-live="polite" aria-label="Chat conversation history">
       @for (msg of messages(); track $index) {
         <div class="message-bubble" [class.user]="msg.sender === 'user'" [class.ai]="msg.sender === 'ai'">
           <div class="bubble-content">
@@ -31,7 +31,7 @@
             @if (msg.suggestedSpecialty) {
               <div class="specialty-card-cta">
                 <span>Recommended Care:</span>
-                <button (click)="onSelectSpecialty(msg.suggestedSpecialty)">
+                <button (click)="onSelectSpecialty(msg.suggestedSpecialty)" [attr.aria-label]="'Consult a ' + msg.suggestedSpecialty">
                   Consult a {{ msg.suggestedSpecialty }} →
                 </button>
               </div>
@@ -42,7 +42,7 @@
       }
 
       @if (isThinking()) {
-        <div class="message-bubble ai typing">
+        <div class="message-bubble ai typing" aria-label="AIDoc is analyzing symptoms">
           <div class="dots-loader">
             <span></span><span></span><span></span>
           </div>
@@ -51,7 +51,7 @@
     </div>
 
     <!-- Quick Prompt Pills -->
-    <div class="quick-prompts">
+    <div class="quick-prompts" role="group" aria-label="Suggested symptom inquiries">
       @for (prompt of quickPrompts(); track prompt) {
         <button class="prompt-chip" (click)="sendMessage(prompt)">{{ prompt }}</button>
       }
@@ -62,12 +62,13 @@
       <input 
         type="text" 
         placeholder="Type symptoms (e.g. fever since 2 days)..."
+        aria-label="Describe your symptoms"
         [ngModel]="userInput()"
         (ngModelChange)="userInput.set($event)"
         (keyup.enter)="sendMessage()"
       />
-      <button class="send-btn" (click)="sendMessage()" [disabled]="!userInput().trim()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <button class="send-btn" (click)="sendMessage()" [disabled]="!userInput().trim()" aria-label="Send symptom message">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
           <line x1="22" y1="2" x2="11" y2="13"/>
           <polygon points="22 2 15 22 11 13 2 9 22 2"/>
         </svg>

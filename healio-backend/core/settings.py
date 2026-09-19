@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-jvd_$y88-lh8(n)3qz@08$grur%c9x*uvms5=!c2n!w1-1hjyk
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -63,6 +63,25 @@ CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:4200",
     "http://127.0.0.1:4200",
+]
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
 ]
 
 ROOT_URLCONF = 'core.urls'
@@ -144,9 +163,9 @@ STATIC_URL = 'static/'
 # Gmail SSL Configuration (Port 465 avoids ISP port 587 blocks)
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 465
-EMAIL_USE_SSL = True
-EMAIL_USE_TLS = False
+EMAIL_PORT = 587
+EMAIL_USE_SSL = False
+EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'harshithanamala04@gmail.com'
 EMAIL_HOST_PASSWORD = 'jgxlktrollqzqazp'
-DEFAULT_FROM_EMAIL = 'Healio Health <harshithanamala04@gmail.com>'
+DEFAULT_FROM_EMAIL = 'Healio Health <harshithanamala04@gmail.com>'

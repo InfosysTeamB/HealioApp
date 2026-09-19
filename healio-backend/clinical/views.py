@@ -78,44 +78,53 @@ class BookSlotView(APIView):
         slot_id = request.data.get('slot_id')
         patient_id = request.data.get('patient_id')
 
-        try:
-            slot = AppointmentSlot.objects.get(id=slot_id)
-            if slot.status == 'Booked':
-                return Response({'error': 'Slot already booked'}, status=status.HTTP_400_BAD_REQUEST)
+        if not slot_id or not patient_id:
+            return Response({'error': 'slot_id and patient_id are required'}, status=status.HTTP_400_BAD_REQUEST)
 
-            patient = Patient.objects.get(patient_id=patient_id)
-            slot.patient = patient
-            slot.status = 'Booked'
-            slot.save()
-            # Note: post_save signal on AppointmentSlot automatically logs the booking
+        slot = AppointmentSlot.objects.filter(id=slot_id).first()
+        if not slot:
+            return Response({'error': 'Appointment slot not found'}, status=status.HTTP_404_NOT_FOUND)
 
-            # Trigger automated reminder notification
-            NotificationAlert.objects.create(
-                patient=patient,
-                alert_type='Reminder',
-                message=f"Reminder: Upcoming appointment scheduled on {slot.day} ({slot.time_slot})."
-            )
+        if slot.status == 'Booked':
+            return Response({'error': 'Slot already booked'}, status=status.HTTP_400_BAD_REQUEST)
 
-            return Response(AppointmentSlotSerializer(slot).data, status=status.HTTP_200_OK)
-        except (AppointmentSlot.DoesNotExist, Patient.DoesNotExist) as e:
-            return Response({'error': str(e)}, status=status.HTTP_404_NOT_FOUND)
+        patient = Patient.objects.filter(patient_id=patient_id).first()
+        if not patient:
+            return Response({'error': 'Patient not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        slot.patient = patient
+        slot.status = 'Booked'
+        slot.save()
+        # Note: post_save signal on AppointmentSlot automatically logs the booking
+
+        # Trigger automated reminder notification
+        NotificationAlert.objects.create(
+            patient=patient,
+            alert_type='Reminder',
+            message=f"Reminder: Upcoming appointment scheduled on {slot.day} ({slot.time_slot})."
+        )
+
+        return Response(AppointmentSlotSerializer(slot).data, status=status.HTTP_200_OK)
 
 class CancelSlotView(APIView):
     def post(self, request):
         slot_id = request.data.get('slot_id')
         patient_id = request.data.get('patient_id')
 
-        try:
-            slot = AppointmentSlot.objects.get(id=slot_id)
-            # Direct reset - post_save signal on AppointmentSlot automatically logs the cancellation
-            slot.patient = None
-            slot.status = 'Available'
-            slot.save()
+        if not slot_id:
+            return Response({'error': 'slot_id is required'}, status=status.HTTP_400_BAD_REQUEST)
 
-            slot.refresh_from_db()
-            return Response(AppointmentSlotSerializer(slot).data, status=status.HTTP_200_OK)
-        except AppointmentSlot.DoesNotExist:
+        slot = AppointmentSlot.objects.filter(id=slot_id).first()
+        if not slot:
             return Response({'error': 'Slot not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Direct reset - post_save signal on AppointmentSlot automatically logs the cancellation
+        slot.patient = None
+        slot.status = 'Available'
+        slot.save()
+
+        slot.refresh_from_db()
+        return Response(AppointmentSlotSerializer(slot).data, status=status.HTTP_200_OK)
 
 class ConsultationListCreateView(APIView):
     def get(self, request):

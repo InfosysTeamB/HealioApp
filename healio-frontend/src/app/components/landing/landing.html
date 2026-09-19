@@ -1,187 +1,912 @@
 <div class="wrapper">
-    <!-- Top Location Bar -->
-    <header class="top-bar">
-        <div class="location-selector" (click)="openLocationModal()">
-            <svg class="loc-pin" viewBox="0 0 24 24" fill="#0E9F6E">
-                <path
-                    d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
-            </svg>
-            <span class="city-name">{{ selectedCity() }}</span>
-            <svg class="chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <path d="M6 9l6 6 6-6" />
-            </svg>
+  <!-- Primary Sticky Top Header -->
+  <header class="top-bar" role="banner">
+    <div class="top-bar-inner">
+      <div class="header-brand-group">
+        <!-- Bold healio Brand Mark -->
+        <div class="brand-logo" (click)="navigateBottom('home')" role="button" tabindex="0" (keydown.enter)="navigateBottom('home')" title="healio Home" aria-label="healio Home">
+          <span class="brand-name">healio</span>
         </div>
-    </header>
 
-    <!-- Search & AI Consultation Prompt -->
-    <section class="search-section">
+        <!-- Location Selector Pill -->
+        <div class="location-selector" (click)="openLocationModal()" role="button" tabindex="0" (keydown.enter)="openLocationModal()" title="Select your location" aria-label="Select city location, currently {{ selectedCity() }}">
+          <svg class="loc-pin" viewBox="0 0 24 24" fill="#0E9F6E" aria-hidden="true">
+            <path
+              d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+          </svg>
+          <span class="city-name">{{ selectedCity() }}</span>
+          <svg class="chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </div>
+      </div>
+
+      <!-- Search Control Aligned Beside Brand & Location (with Autocomplete Dropdown) -->
+      <div class="header-search-container" role="search">
         <div class="search-input-box">
-            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="2.2">
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-            <input type="text" placeholder="Search for doctors, clinics, hospitals" [(ngModel)]="searchQuery" />
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="2.2" aria-hidden="true">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input type="text" placeholder="Search doctors, specialties, symptoms (e.g. fever, cardiologist)..."
+            aria-label="Search doctors, specialties, and symptoms"
+            [value]="searchQuery()" (input)="onSearchInput($event)" (focus)="isSearchFocused.set(true)"
+            (blur)="onSearchBlur()" (keyup.enter)="onSearchEnter()" />
+          @if (searchQuery()) {
+          <button class="clear-search-btn" type="button" (click)="clearSearch()" title="Clear search" aria-label="Clear search input">✕</button>
+          }
         </div>
 
-        <button class="care-ai-pill" (click)="isAiDocModalOpen.set(true)">
-            <span class="ai-title">Ask</span>
-            <span class="ai-sub">AIDoc</span>
+        <button class="care-ai-pill" (click)="isAiDocModalOpen.set(true)" aria-label="Consult AIDoc Clinical AI Assistant">
+          <span class="ai-title">Ask</span>
+          <span class="ai-sub">AIDoc</span>
         </button>
-    </section>
 
-    <!-- Primary Consult Cards -->
-    <section class="consult-hero-grid">
-        <div class="consult-card consult-inperson">
-            <img src="/InPersonConsultation.png" alt="In-Person Consultation" class="hero-card-img" />
-        </div>
-
-        <div class="consult-card consult-video">
-            <img src="/VideoConsultation.png" alt="Video Consultation" class="hero-card-img" />
-        </div>
-    </section>
-
-    <!-- Core Services Grid -->
-    <section class="services-grid">
-        <div class="service-item">
-            <div class="service-img-card">
-                <img src="/lab.webp" alt="Book Lab Tests" class="service-thumb" />
+        <!-- Search Autocomplete Dropdown -->
+        @if (showAutocompleteDropdown()) {
+        <div class="search-autocomplete-dropdown" role="listbox" aria-label="Search suggestions">
+          @for (item of searchSuggestions(); track item.id) {
+          <div class="suggestion-item" (mousedown)="selectSuggestion(item)" role="option">
+            <span class="suggestion-icon" aria-hidden="true">{{ item.icon }}</span>
+            <div class="suggestion-info">
+              <span class="suggestion-title">{{ item.title }}</span>
+              <small class="suggestion-sub">{{ item.subtitle }}</small>
             </div>
-            <span class="service-label">Book<br />Lab Tests</span>
+            <span class="suggestion-badge">{{ item.badge }}</span>
+          </div>
+          }
         </div>
+        }
+      </div>
 
-        <div class="service-item">
-            <div class="service-img-card">
-                <img src="/surgery.webp" alt="Plan Surgeries" class="service-thumb" />
-            </div>
-            <span class="service-label">Plan<br />Surgeries</span>
-        </div>
-
-        <div class="service-item">
-            <div class="service-img-card">
-                <img src="/medicine.avif" alt="Order Medicines" class="service-thumb" />
-            </div>
-            <span class="service-label">Order<br />Medicines</span>
-        </div>
-    </section>
-
-    <!-- Recently Viewed Tags -->
-    <section class="section-block">
-        <h3 class="section-heading">Recently Viewed</h3>
-        <div class="recent-chips-scroll">
-            <div class="chip">
-                <svg viewBox="0 0 24 24" fill="none" stroke="#0E9F6E" stroke-width="2.5">
-                    <circle cx="11" cy="11" r="8" />
-                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                </svg>
-                <div>
-                    <strong>Dermatologist</strong>
-                    <small>Bangalore</small>
-                </div>
-            </div>
-            <div class="chip">
-                <svg viewBox="0 0 24 24" fill="none" stroke="#0E9F6E" stroke-width="2.5">
-                    <circle cx="11" cy="11" r="8" />
-                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                </svg>
-                <div>
-                    <strong>General Physician</strong>
-                    <small>Bangalore</small>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Specialties Section -->
-    <section class="section-block">
-        <h3 class="section-heading">Find doctors by speciality</h3>
-
-        <div class="toggle-tabs">
-            <button [class.active]="activeCareTab() === 'general'" (click)="activeCareTab.set('general')">
-                General Care
-            </button>
-            <button [class.active]="activeCareTab() === 'advanced'" (click)="activeCareTab.set('advanced')">
-                Advanced Care
-            </button>
-        </div>
-
-        <div class="speciality-grid">
-            @for (spec of filteredSpecialities(); track spec.name) {
-            <div class="speciality-card">
-                <div class="spec-img-wrapper">
-                    <img [src]="spec.image" [alt]="spec.name" />
-                </div>
-                <span class="spec-title">{{ spec.name }}</span>
-            </div>
-            }
-        </div>
-    </section>
-
-    <!-- Got a Health Query Banner -->
-    <section class="query-cta-banner"(click)="isAiDocModalOpen.set(true)">
-        <div class="cta-left">
-            <div class="cta-text-group">
-                <h4>Got a health query?</h4>
-                <p>Ask and get answers from medical experts for free</p>
-            </div>
-        </div>
-        <button class="cta-circle-btn" type="button" aria-label="Ask Query">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <path d="M5 12h14M12 5l7 7-7 7" />
-            </svg>
+      <div class="header-actions-group">
+        <button class="header-gps-btn" type="button" (click)="detectGPSLocation()" title="Detect current GPS location" aria-label="Detect current GPS location">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#0E9F6E" stroke-width="2.2" aria-hidden="true">
+            <circle cx="12" cy="12" r="3" />
+            <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+          </svg>
+          <span class="gps-text">Current Location</span>
         </button>
-    </section>
 
-<section class="trust-stats-section">
-    <div class="brand-watermark">
-        <span class="dot">•</span> healio <span class="dot">•</span>
+        <!-- Account / Profile Avatar Badge (Clean Authenticated State, No Sign In Buttons) -->
+        <button class="header-avatar-btn" type="button" (click)="toggleProfileDrawer()" title="View Patient Profile" aria-label="View Patient Profile and Health Records">
+          <span class="header-initials-badge">{{ userInitials() }}</span>
+        </button>
+      </div>
     </div>
-</section>
+  </header>
 
-<!-- Bottom Floating Navigation Bar -->
-<nav class="bottom-nav">
-    <button [class.active]="activeNav() === 'home'" (click)="activeNav.set('home')">
-        <svg viewBox="0 0 24 24" fill="currentColor">
-            <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+  <!-- Dynamic Recently Viewed Slim Strip (Directly beneath the search bar) -->
+  @if (recentlyViewed().length > 0) {
+  <section class="recently-viewed-strip">
+    <div class="recent-header">
+      <div class="recent-title-group">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#0E9F6E" stroke-width="2.2" class="recent-icon">
+          <circle cx="12" cy="12" r="10" />
+          <polyline points="12 6 12 12 16 14" />
         </svg>
-        <span>Home</span>
-    </button>
-    <button [class.active]="activeNav() === 'in-person'" (click)="activeNav.set('in-person')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-            <circle cx="9" cy="7" r="4" />
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-        </svg>
-        <span>In-Person</span>
-    </button>
-    <button [class.active]="activeNav() === 'video'" (click)="activeNav.set('video')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect width="14" height="12" x="2" y="6" rx="2" />
-            <polygon points="22 8 16 12 22 16 22 8" />
-        </svg>
-        <span>Video Consult</span>
-    </button>
-    <button [class.active]="activeNav() === 'account'" (click)="activeNav.set('account')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-            <circle cx="12" cy="7" r="4" />
-        </svg>
-        <span>Account</span>
-    </button>
-</nav>
+        <span class="recent-label">Recently Viewed</span>
+      </div>
+      <button type="button" class="recent-clear-link" (click)="clearRecentlyViewed($event)"
+        title="Clear recent searches">
+        Clear
+      </button>
+    </div>
 
-<!-- Embedded Interactive Map Modal -->
-  @if (isLocationModalOpen()) {
-    <app-location-modal 
-      (locationSelected)="onLocationConfirmed($event)"
-      (close)="isLocationModalOpen.set(false)">
-    </app-location-modal>
+    <div class="recent-pills-carousel">
+      @for (item of recentlyViewed(); track item.id) {
+      <div class="recent-pill-card" (click)="onRecentItemClick(item)" [title]="item.title">
+        <span class="pill-badge-type">{{ item.type === 'doctor' ? '👨‍⚕️' : item.type === 'specialty' ? '🩺' : '🔍'
+          }}</span>
+        <div class="pill-text-wrap">
+          <strong class="pill-title">{{ item.title }}</strong>
+          <small class="pill-sub">{{ item.subtitle }}</small>
+        </div>
+      </div>
+      }
+    </div>
+  </section>
   }
 
-  <!-- AIDoc Modal -->
+  <!-- Primary Consult Cards -->
+  <section class="consult-hero-grid">
+    <div class="consult-card consult-inperson" (click)="navigateBottom('in-person')" style="cursor: pointer;">
+      <img src="/InPersonConsultation.png" alt="In-Person Consultation" class="hero-card-img" />
+    </div>
+
+    <div class="consult-card consult-video" (click)="navigateBottom('video')" style="cursor: pointer;">
+      <img src="/VideoConsultation.png" alt="Video Consultation" class="hero-card-img" />
+    </div>
+  </section>
+
+  <!-- Core Services Grid -->
+  <section class="services-grid">
+    <div class="service-item" (click)="openServiceModal('lab')" role="button" tabindex="0" (keydown.enter)="openServiceModal('lab')" title="Book Diagnostic Lab Tests">
+      <div class="service-img-card">
+        <img src="/lab.webp" alt="Book Lab Tests" class="service-thumb" />
+      </div>
+      <span class="service-label">Book<br />Lab Tests</span>
+    </div>
+
+    <div class="service-item" (click)="openServiceModal('surgery')" role="button" tabindex="0" (keydown.enter)="openServiceModal('surgery')" title="Plan Surgeries with Healio Care">
+      <div class="service-img-card">
+        <img src="/surgery.webp" alt="Plan Surgeries" class="service-thumb" />
+      </div>
+      <span class="service-label">Plan<br />Surgeries</span>
+    </div>
+
+    <div class="service-item" (click)="openServiceModal('medicine')" role="button" tabindex="0" (keydown.enter)="openServiceModal('medicine')" title="Order Medicines with 20% Discount">
+      <div class="service-img-card">
+        <img src="/medicine.avif" alt="Order Medicines" class="service-thumb" />
+      </div>
+      <span class="service-label">Order<br />Medicines</span>
+    </div>
+  </section>
+
+  <!-- Specialties Section -->
+  <section class="section-block" aria-labelledby="specialties-heading">
+    <h3 id="specialties-heading" class="section-heading">Find doctors by speciality</h3>
+
+    <div class="toggle-tabs" role="tablist" aria-label="Care category">
+      <button role="tab" [class.active]="activeCareTab() === 'general'" [attr.aria-selected]="activeCareTab() === 'general'" (click)="activeCareTab.set('general')">
+        General Care
+      </button>
+      <button role="tab" [class.active]="activeCareTab() === 'advanced'" [attr.aria-selected]="activeCareTab() === 'advanced'" (click)="activeCareTab.set('advanced')">
+        Advanced Care
+      </button>
+    </div>
+
+    <div class="speciality-grid">
+      @for (spec of filteredSpecialities(); track spec.name) {
+      <div class="speciality-card" (click)="handleAiDocSpecialtyHandoff(spec.name)" role="button" tabindex="0" (keydown.enter)="handleAiDocSpecialtyHandoff(spec.name)" [attr.aria-label]="'Explore ' + spec.name + ' doctors'">
+        <div class="spec-img-wrapper">
+          <img [src]="spec.image" [alt]="spec.name" />
+        </div>
+        <span class="spec-title">{{ spec.name }}</span>
+      </div>
+      }
+    </div>
+  </section>
+
+  <!-- Got a Health Query Banner -->
+  <section class="query-cta-banner" (click)="isAiDocModalOpen.set(true)" role="region" aria-label="Health Query Assistant">
+    <div class="cta-left">
+      <div class="cta-text-group">
+        <h4>Got a health query?</h4>
+        <p>Ask and get answers from medical experts for free</p>
+      </div>
+    </div>
+    <button class="cta-circle-btn" type="button" aria-label="Ask AIDoc clinical assistant">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+        <path d="M5 12h14M12 5l7 7-7 7" />
+      </svg>
+    </button>
+  </section>
+
+  <!-- Dedicated Video Consultation Care Module -->
+  <section id="video-consultations" class="video-consult-section" aria-labelledby="video-consult-heading">
+    <div class="video-section-header">
+      <div class="video-title-group">
+        <div class="video-live-pill">
+          <span class="live-dot" aria-hidden="true"></span>
+          <span class="live-text">ONLINE CONSULTATION</span>
+        </div>
+        <h2 id="video-consult-heading">Instant Video Consultation</h2>
+        <p>Connect with verified medical specialists online in &lt; 60 seconds from anywhere</p>
+      </div>
+      <div class="instant-badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#0E9F6E" stroke-width="2.2" class="instant-icon" aria-hidden="true">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+        </svg>
+        <span>Instant Connect Ready (&lt; 60s)</span>
+      </div>
+    </div>
+
+    <!-- Video Doctors Cards Grid -->
+    <div class="video-doctors-grid">
+      @for (doc of onlineVideoDoctors(); track doc.id) {
+      <div class="video-doctor-card">
+        <div class="vcard-header">
+          <div class="vdoc-avatar-container">
+            <img [src]="doc.avatarUrl" [alt]="doc.name" class="vdoc-avatar-img" />
+            <span class="vdoc-status-bubble" title="Doctor is online and ready">
+              <span class="vdoc-status-dot" aria-label="Online"></span>
+            </span>
+          </div>
+
+          <div class="vdoc-meta">
+            <div class="vdoc-name-badge">
+              <h3>{{ doc.name }}</h3>
+              <span class="vdoc-check" title="Certified Specialist" aria-label="Verified specialist">✓</span>
+            </div>
+            <span class="vdoc-spec-label">{{ doc.specialty }}</span>
+            <small class="vdoc-qual-text">{{ doc.qualification }} • {{ doc.experienceYears }} yrs exp</small>
+
+            <div class="vdoc-stats-chips">
+              <span class="vdoc-rating-chip" aria-label="Rating {{ doc.rating }} out of 5">★ {{ doc.rating }}</span>
+              <span class="vdoc-consults-count">({{ doc.consultsCount }}+ consults)</span>
+              <span class="vdoc-speed-badge">⚡ {{ doc.waitDuration }} connect</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="vcard-body">
+          <div class="vdoc-lang-section">
+            <span class="vdoc-lang-label">Languages Spoken:</span>
+            <div class="vdoc-lang-chips">
+              @for (lang of doc.languages; track lang) {
+              <span class="lang-tag">{{ lang }}</span>
+              }
+            </div>
+          </div>
+
+          <div class="vcard-action-bar">
+            <div class="vdoc-price-block">
+              <small>Video Call Fee</small>
+              <strong>₹{{ doc.videoFee }}</strong>
+            </div>
+            <button type="button" class="btn-start-video" (click)="startVideoCall(doc)" [attr.aria-label]="'Start video consultation with ' + doc.name">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="vbtn-icon" aria-hidden="true">
+                <polygon points="23 7 16 12 23 17 23 7" />
+                <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+              </svg>
+              <span>Consult Now (Video Call)</span>
+            </button>
+          </div>
+        </div>
+      </div>
+      }
+    </div>
+  </section>
+
+  <!-- In-Person Consultation Clinics Section -->
+  <section id="inperson-consultations" class="inperson-section" aria-labelledby="inperson-heading">
+    <div class="section-title-row">
+      <div>
+        <h2 id="inperson-heading">Verified Doctors Near You</h2>
+        <p>Book physical appointments with zero waiting time at local clinics</p>
+      </div>
+      <div class="location-badge" (click)="openLocationModal()" role="button" tabindex="0" (keydown.enter)="openLocationModal()" style="cursor: pointer;" title="Change Location" aria-label="Change city location, currently {{ selectedCity() }}">
+        📍 {{ selectedCity() }}
+      </div>
+    </div>
+
+    <!-- Quick Reactive Filter Pills -->
+    <div class="filter-pills-bar" role="toolbar" aria-label="Doctor search filters">
+      <button type="button" class="filter-pill" [class.active]="filterAvailableToday()"
+        [attr.aria-pressed]="filterAvailableToday()"
+        (click)="toggleAvailableToday()">
+        ⚡ Available Today
+      </button>
+      <button type="button" class="filter-pill" [class.active]="filterWithin5Km()"
+        [attr.aria-pressed]="filterWithin5Km()"
+        (click)="toggleWithin5Km()">
+        📍 Within 5 km
+      </button>
+      <button type="button" class="filter-pill" [class.active]="filterHighRating()"
+        [attr.aria-pressed]="filterHighRating()"
+        (click)="toggleHighRating()">
+        ★ Rating 4.5+
+      </button>
+
+      @if (activeSpecialtyFilter()) {
+      <div class="active-filter-chip">
+        <span>Specialty: {{ activeSpecialtyFilter() }}</span>
+        <button type="button" (click)="clearSpecialtyFilter()" title="Clear specialty filter" aria-label="Clear specialty filter">✕</button>
+      </div>
+      }
+
+      @if (filterAvailableToday() || filterWithin5Km() || filterHighRating() || activeSpecialtyFilter() ||
+      searchQuery()) {
+      <button type="button" class="reset-filters-btn" (click)="resetAllFilters()" aria-label="Reset all applied filters">
+        Reset All
+      </button>
+      }
+    </div>
+
+    <!-- Results Count Status -->
+    <div class="results-meta-row" aria-live="polite">
+      <span class="results-count">
+        Showing <strong>{{ filteredDoctors().length }}</strong> doctors near {{ selectedCity() }}
+      </span>
+      @if (debouncedSearchQuery()) {
+      <span class="search-match-pill">Matching "{{ debouncedSearchQuery() }}"</span>
+      }
+    </div>
+
+    <!-- Doctors Cards Grid -->
+    <div class="doctors-cards-grid">
+      @for (doc of filteredDoctors(); track doc.id) {
+      <app-inperson-consult-card [doctor]="doc" (slotSelected)="handleSlotBooking($event)"
+        (viewProfile)="handleProfileClick($event)">
+      </app-inperson-consult-card>
+      } @empty {
+      <div class="no-doctors-found">
+        <div class="empty-icon-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+        </div>
+        <h3>No doctors found matching criteria</h3>
+        <p>Try clearing your search query or loosening your distance/rating filters.</p>
+        <button type="button" class="reset-cta-btn" (click)="resetAllFilters()">
+          Show All Doctors
+        </button>
+      </div>
+      }
+    </div>
+  </section>
+
+  <!-- Bottom Floating Navigation Bar -->
+  <nav class="bottom-nav" role="navigation" aria-label="Primary bottom navigation">
+    <button [class.active]="activeNav() === 'home'" type="button" (click)="navigateBottom('home')" aria-label="Navigate to Home" [attr.aria-current]="activeNav() === 'home' ? 'page' : null">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+      </svg>
+      <span>Home</span>
+    </button>
+    <button [class.active]="activeNav() === 'in-person'" type="button" (click)="navigateBottom('in-person')" aria-label="Navigate to In-Person Consultations" [attr.aria-current]="activeNav() === 'in-person' ? 'page' : null">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      </svg>
+      <span>In-Person</span>
+    </button>
+    <button [class.active]="activeNav() === 'video'" type="button" (click)="navigateBottom('video')" aria-label="Navigate to Video Consultations" [attr.aria-current]="activeNav() === 'video' ? 'page' : null">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <rect width="14" height="12" x="2" y="6" rx="2" />
+        <polygon points="22 8 16 12 22 16 22 8" />
+      </svg>
+      <span>Video Consult</span>
+    </button>
+    <button [class.active]="activeNav() === 'account' || isProfileDrawerOpen()" type="button"
+      (click)="navigateBottom('account')" aria-label="View Patient Account and Records">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+        <circle cx="12" cy="7" r="4" />
+      </svg>
+      <span>Account</span>
+    </button>
+  </nav>
+
+  <!-- Dynamic Profile / Account Slide-Over Drawer -->
+  @if (isProfileDrawerOpen()) {
+  <div class="profile-drawer-backdrop" (click)="closeProfileDrawer()">
+    <div class="profile-drawer-panel" (click)="$event.stopPropagation()">
+      <div class="drawer-header">
+        <div class="drawer-header-left">
+          <h3>My Profile</h3>
+          <p>Verified Patient Account & Medical Records</p>
+        </div>
+        <button class="drawer-close-btn" type="button" (click)="closeProfileDrawer()"
+          aria-label="Close Drawer">✕</button>
+      </div>
+
+      <div class="drawer-body">
+        @if (currentUser(); as user) {
+        <!-- Verified First-User Account Card -->
+        <div class="user-hero-card">
+          <div class="avatar-badge">{{ userInitials() }}</div>
+          <div class="user-meta">
+            <h4>{{ user.name }}</h4>
+            <span class="user-contact">{{ user.email }}</span>
+            <span class="user-phone-badge">📞 {{ user.phone || '+91 98765 43210' }}</span>
+            <span class="patient-id-tag">Patient ID: {{ user.patient_id || 'PT-88341' }}</span>
+          </div>
+        </div>
+
+        <!-- Upcoming Consultation Reminder Card -->
+        <div class="consultation-reminder-card">
+          <div class="reminder-badge-row">
+            <span class="reminder-tag">Upcoming Visit</span>
+            <span class="status-confirmed">● Confirmed</span>
+          </div>
+          <div class="reminder-doc-row">
+            <img src="https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=300&auto=format&fit=crop&q=80"
+              alt="Doctor" class="reminder-avatar" />
+            <div class="reminder-details">
+              <strong>Dr. Ramesh Rao</strong>
+              <small>Cardiologist • Apollo Cradle Clinic</small>
+              <span class="reminder-time">📍 Today at 4:30 PM (In-Person)</span>
+            </div>
+          </div>
+          <div class="reminder-actions">
+            <button class="btn-reminder-primary" (click)="openAppointmentModal()" title="View Itinerary & Clinic Details">View Appointment Details</button>
+          </div>
+        </div>
+
+        <!-- Quick Navigation Links ("My Appointments", "Health Records", "Prescriptions") -->
+        <div class="drawer-menu-list">
+          <button class="drawer-menu-item" (click)="goToPortal('/patient', 'appointments')" title="View booked and past appointments">
+            <div class="menu-icon-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#0E9F6E" stroke-width="2">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+              </svg>
+            </div>
+            <div class="menu-label-group">
+              <strong>My Appointments</strong>
+              <small>Past & active consult bookings</small>
+            </div>
+            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M9 18l6-6-6-6" />
+            </svg>
+          </button>
+
+          <button class="drawer-menu-item" (click)="goToPortal('/patient', 'records')" title="View medical history and clinical notes">
+            <div class="menu-icon-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#0E9F6E" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="16" y1="13" x2="8" y2="13" />
+                <line x1="16" y1="17" x2="8" y2="17" />
+                <polyline points="10 9 9 9 8 9" />
+              </svg>
+            </div>
+            <div class="menu-label-group">
+              <strong>Health Records</strong>
+              <small>Clinical notes, lab test reports</small>
+            </div>
+            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M9 18l6-6-6-6" />
+            </svg>
+          </button>
+
+          <button class="drawer-menu-item" (click)="goToPortal('/patient', 'prescriptions')" title="View active prescriptions and medicines">
+            <div class="menu-icon-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#0E9F6E" stroke-width="2">
+                <path d="M10.5 20.5l10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7z" />
+                <line x1="8.5" y1="8.5" x2="15.5" y2="15.5" />
+              </svg>
+            </div>
+            <div class="menu-label-group">
+              <strong>Prescriptions</strong>
+              <small>Active medicines and dosage charts</small>
+            </div>
+            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M9 18l6-6-6-6" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Sign Out / Switch Account Action (Routes to /splash) -->
+        <div class="drawer-footer-actions">
+          <button class="btn-drawer-logout" (click)="logoutPatient()" title="Sign Out and Switch Account">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+            <span>Sign Out / Switch Account</span>
+          </button>
+        </div>
+        } @else {
+        <!-- Fallback safe action -->
+        <div class="drawer-footer-actions">
+          <button class="btn-drawer-logout" (click)="logoutPatient()">
+            <span>Go to Onboarding</span>
+          </button>
+        </div>
+        }
+      </div>
+    </div>
+  </div>
+  }
+
+  <!-- Embedded Interactive Map Modal -->
+  @if (isLocationModalOpen()) {
+  <app-location-modal (locationSelected)="onLocationConfirmed($event)" (close)="isLocationModalOpen.set(false)">
+  </app-location-modal>
+  }
+
+  <!-- AIDoc Modal with Specialty Handoff -->
   @if (isAiDocModalOpen()) {
-    <app-aidoc-modal 
-      (close)="isAiDocModalOpen.set(false)">
-    </app-aidoc-modal>
+  <app-aidoc-modal (bookSpecialty)="handleAiDocSpecialtyHandoff($event)" (close)="isAiDocModalOpen.set(false)">
+  </app-aidoc-modal>
+  }
+
+  <!-- Clinic Info Details Modal -->
+  @if (selectedDoctorProfile(); as doc) {
+  <div class="clinic-modal-backdrop" (click)="closeProfileModal()">
+    <div class="clinic-modal-sheet" (click)="$event.stopPropagation()">
+      <div class="clinic-modal-header">
+        <div class="clinic-modal-doc">
+          <img [src]="doc.avatarUrl" [alt]="doc.name" class="modal-doc-avatar" />
+          <div>
+            <h3>{{ doc.name }}</h3>
+            <p>{{ doc.specialty }} • {{ doc.experienceYears }} Years Experience</p>
+          </div>
+        </div>
+        <button class="modal-close-icon" type="button" (click)="closeProfileModal()">✕</button>
+      </div>
+
+      <div class="clinic-modal-content">
+        <div class="clinic-address-card">
+          <span class="card-caption">Physical Clinic Details</span>
+          <h4>{{ doc.clinicName }}</h4>
+          <p>{{ doc.clinicAddress }}</p>
+          <span class="proximity-badge">📍 {{ doc.distanceKm }} km away from {{ selectedCity() }}</span>
+        </div>
+
+        <div class="clinic-stats-grid">
+          <div class="stat-box">
+            <small>Consultation Fee</small>
+            <strong>₹{{ doc.fee }}</strong>
+          </div>
+          <div class="stat-box">
+            <small>Patient Rating</small>
+            <strong class="star-rating">★ {{ doc.rating }}</strong>
+          </div>
+          <div class="stat-box">
+            <small>Reviews</small>
+            <strong>{{ doc.reviewsCount }}+ verified</strong>
+          </div>
+          <div class="stat-box">
+            <small>Next Available</small>
+            <strong class="next-slot-text">{{ doc.nextAvailableSlot }}</strong>
+          </div>
+        </div>
+
+        <div class="clinic-symptoms-section">
+          <span class="card-caption">Common Symptoms Treated</span>
+          <div class="symptom-tag-list">
+            @for (sym of doc.symptoms; track sym) {
+            <span class="symptom-tag">{{ sym }}</span>
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="clinic-modal-actions">
+        <button class="btn-modal-close" type="button" (click)="closeProfileModal()">
+          Done
+        </button>
+      </div>
+    </div>
+  </div>
+  }
+
+  <!-- Upcoming Appointment Details Modal (Token #14, Itinerary, Clinic Directions) -->
+  @if (isAppointmentDetailsModalOpen()) {
+  <div class="service-modal-backdrop" (click)="closeAppointmentModal()">
+    <div class="service-modal-sheet appt-modal-sheet" (click)="$event.stopPropagation()" role="dialog" aria-labelledby="appt-details-title">
+      <div class="modal-top-bar">
+        <div class="modal-badge-group">
+          <span class="badge-status-confirmed">● Confirmed In-Person Visit</span>
+          <span class="badge-token-number">Queue Token: #14</span>
+        </div>
+        <button class="modal-close-btn" type="button" (click)="closeAppointmentModal()" aria-label="Close Appointment Details">✕</button>
+      </div>
+
+      <div class="appt-modal-header">
+        <img src="https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=300&auto=format&fit=crop&q=80" alt="Dr. Ramesh Rao" class="appt-doc-avatar" />
+        <div class="appt-doc-meta">
+          <h3 id="appt-details-title">Dr. Ramesh Rao</h3>
+          <p class="appt-doc-spec">Senior Interventional Cardiologist • MD, DM (Cardiology)</p>
+          <span class="appt-doc-exp">18+ Years Experience • Apollo Cradle Clinic</span>
+        </div>
+      </div>
+
+      <div class="appt-itinerary-grid">
+        <div class="itinerary-card time-card">
+          <div class="itin-icon">🕒</div>
+          <div class="itin-body">
+            <small>Consultation Schedule</small>
+            <strong>Today, 4:30 PM IST</strong>
+            <span>Report 15 mins early for vitals check</span>
+          </div>
+        </div>
+
+        <div class="itinerary-card location-card">
+          <div class="itin-icon">🏥</div>
+          <div class="itin-body">
+            <small>Consultation Venue</small>
+            <strong>Apollo Cradle Clinic</strong>
+            <span>Plot 42, 100 Feet Road, HAL 2nd Stage, Indiranagar, Bangalore - 560038</span>
+          </div>
+        </div>
+
+        <div class="itinerary-card token-card">
+          <div class="itin-icon">🎫</div>
+          <div class="itin-body">
+            <small>Live Token Number</small>
+            <strong class="token-val">#14 (3 Patients Ahead)</strong>
+            <span>Estimated consult window: 4:30 PM - 4:50 PM</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="appt-instructions-box">
+        <h4>📋 Patient Preparation Checklist:</h4>
+        <ul>
+          <li>Carry previous ECG strips, ECHO reports, and recent lipid profile logs.</li>
+          <li>Keep an active list of any daily blood pressure or cardiovascular medications.</li>
+          <li>Fast track token verification at reception desk using Patient ID: <strong>{{ currentUser()?.patient_id || 'PT-88341' }}</strong>.</li>
+        </ul>
+      </div>
+
+      <div class="appt-action-footer">
+        <button class="btn-primary-action" (click)="goToPortal('/patient', 'appointments')">
+          <span>Open Patient Portal</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-arr">
+            <path d="M5 12h14M12 5l7 7-7 7" />
+          </svg>
+        </button>
+        <button class="btn-secondary-action" (click)="closeAppointmentModal()">
+          Dismiss
+        </button>
+      </div>
+    </div>
+  </div>
+  }
+
+  <!-- Diagnostic Lab Tests Booking Modal -->
+  @if (activeServiceModal() === 'lab') {
+  <div class="service-modal-backdrop" (click)="closeServiceModal()">
+    <div class="service-modal-sheet lab-modal-sheet" (click)="$event.stopPropagation()" role="dialog" aria-labelledby="lab-modal-title">
+      <div class="modal-top-bar">
+        <div class="modal-title-with-icon">
+          <span class="m-icon">🧪</span>
+          <div>
+            <h3 id="lab-modal-title">Healio Diagnostic Labs</h3>
+            <p>100% NABL-Accredited Labs • Free Home Sample Collection</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" type="button" (click)="closeServiceModal()" aria-label="Close Lab Booking">✕</button>
+      </div>
+
+      @if (serviceActionSuccess()) {
+      <div class="service-success-banner">
+        <span class="banner-icon">✓</span>
+        <div class="banner-text">
+          <strong>Order Confirmed</strong>
+          <p>{{ serviceActionSuccess() }}</p>
+        </div>
+      </div>
+      }
+
+      <div class="lab-highlights-bar">
+        <div class="highlight-item">
+          <span class="h-icon">🏠</span>
+          <span>Free 60-Min Home Pickup</span>
+        </div>
+        <div class="highlight-item">
+          <span class="h-icon">🛡️</span>
+          <span>NABL & CAP Certified</span>
+        </div>
+        <div class="highlight-item">
+          <span class="h-icon">⚡</span>
+          <span>Digital Reports in 6-12 Hrs</span>
+        </div>
+      </div>
+
+      <div class="lab-packages-grid">
+        @for (pkg of labPackages; track pkg.id) {
+        <div class="lab-package-card">
+          <div class="pkg-top">
+            <span class="pkg-badge">{{ pkg.badge }}</span>
+            <span class="pkg-tests-count">{{ pkg.testsCount }}</span>
+          </div>
+          <h4 class="pkg-title">{{ pkg.title }}</h4>
+          <p class="pkg-desc">{{ pkg.description }}</p>
+          <div class="pkg-fasting">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="clock-icon">
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+            <span>{{ pkg.fastingReq }}</span>
+          </div>
+
+          <div class="pkg-bottom">
+            <div class="pkg-pricing">
+              <span class="disc-price">₹{{ pkg.discountedPrice }}</span>
+              <span class="orig-price">₹{{ pkg.originalPrice }}</span>
+            </div>
+            <button type="button" class="btn-book-lab" (click)="bookLabPackage(pkg.title)">
+              Book Test
+            </button>
+          </div>
+        </div>
+        }
+      </div>
+    </div>
+  </div>
+  }
+
+  <!-- Surgical Procedures & Care Coordinator Modal -->
+  @if (activeServiceModal() === 'surgery') {
+  <div class="service-modal-backdrop" (click)="closeServiceModal()">
+    <div class="service-modal-sheet surgery-modal-sheet" (click)="$event.stopPropagation()" role="dialog" aria-labelledby="surgery-modal-title">
+      <div class="modal-top-bar">
+        <div class="modal-title-with-icon">
+          <span class="m-icon">🏥</span>
+          <div>
+            <h3 id="surgery-modal-title">Plan Surgeries with Healio Care</h3>
+            <p>100% Cashless Insurance Support • Top Specialized Surgeons</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" type="button" (click)="closeServiceModal()" aria-label="Close Surgery Modal">✕</button>
+      </div>
+
+      @if (serviceActionSuccess()) {
+      <div class="service-success-banner">
+        <span class="banner-icon">✓</span>
+        <div class="banner-text">
+          <strong>Inquiry Submitted</strong>
+          <p>{{ serviceActionSuccess() }}</p>
+        </div>
+      </div>
+      }
+
+      <div class="surgery-guarantees-grid">
+        <div class="guarantee-box">
+          <span class="g-icon">🚗</span>
+          <strong>Free Cab Pickup</strong>
+          <small>To and from the hospital</small>
+        </div>
+        <div class="guarantee-box">
+          <span class="g-icon">💳</span>
+          <strong>0% Interest EMI</strong>
+          <small>Flexible monthly financing</small>
+        </div>
+        <div class="guarantee-box">
+          <span class="g-icon">🤝</span>
+          <strong>Care Coordinator</strong>
+          <small>Dedicated 24/7 personal escort</small>
+        </div>
+      </div>
+
+      <div class="surgery-procedures-section">
+        <h4 class="sub-sec-heading">Select Procedure for Instant Pre-Authorization:</h4>
+        <div class="surgery-procedures-list">
+          @for (proc of surgicalProcedures; track proc.id) {
+          <div class="proc-card" [class.selected]="selectedSurgeryProcedure() === proc.name" (click)="selectedSurgeryProcedure.set(proc.name)">
+            <div class="proc-main">
+              <strong>{{ proc.name }}</strong>
+              <small>{{ proc.department }} • {{ proc.stay }}</small>
+            </div>
+            <div class="proc-tags">
+              <span class="ins-tag">{{ proc.insurance }}</span>
+              <span class="slot-tag">{{ proc.leadTime }}</span>
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+
+      <div class="surgery-inquiry-form-card">
+        <h4>Request Free Surgical Evaluation</h4>
+        <div class="inquiry-form-row">
+          <div class="form-group">
+            <label>Selected Procedure</label>
+            <input type="text" [value]="selectedSurgeryProcedure()" readonly class="readonly-input" />
+          </div>
+          <div class="form-group">
+            <label>Preferred City</label>
+            <select [value]="surgeryCity()" (change)="surgeryCity.set($any($event.target).value)">
+              <option value="Bangalore">Bangalore (Apollo, Manipal, Fortis)</option>
+              <option value="Mumbai">Mumbai (Kokilaben, Nanavati)</option>
+              <option value="Delhi">Delhi NCR (Max Healthcare, Medanta)</option>
+              <option value="Hyderabad">Hyderabad (Apollo Health City)</option>
+            </select>
+          </div>
+        </div>
+        <button type="button" class="btn-submit-surgery" (click)="submitSurgeryInquiry()">
+          Book Free Consultation & Check Insurance Eligibility
+        </button>
+      </div>
+    </div>
+  </div>
+  }
+
+  <!-- Healio Pharmacy & Medicine Order Modal -->
+  @if (activeServiceModal() === 'medicine') {
+  <div class="service-modal-backdrop" (click)="closeServiceModal()">
+    <div class="service-modal-sheet medicine-modal-sheet" (click)="$event.stopPropagation()" role="dialog" aria-labelledby="med-modal-title">
+      <div class="modal-top-bar">
+        <div class="modal-title-with-icon">
+          <span class="m-icon">💊</span>
+          <div>
+            <h3 id="med-modal-title">Healio Pharmacy Delivery</h3>
+            <p>Flat 20% OFF on Genuine Medicines • 2-Hour Express Delivery</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" type="button" (click)="closeServiceModal()" aria-label="Close Pharmacy">✕</button>
+      </div>
+
+      @if (serviceActionSuccess()) {
+      <div class="service-success-banner">
+        <span class="banner-icon">✓</span>
+        <div class="banner-text">
+          <strong>Order Confirmed</strong>
+          <p>{{ serviceActionSuccess() }}</p>
+        </div>
+      </div>
+      }
+
+      <!-- Prescription Upload CTA -->
+      <div class="rx-upload-box">
+        <div class="rx-upload-left">
+          <div class="rx-icon-pill">📄</div>
+          <div>
+            <strong>Have a Doctor's Prescription?</strong>
+            <p>Upload your Rx file and our verified pharmacist will add the prescribed medicines to your cart.</p>
+          </div>
+        </div>
+        <div class="rx-upload-right">
+          <input type="file" id="rx-upload-input" (change)="onPrescriptionFileSelected($event)" style="display: none;" accept="image/*,.pdf" />
+          <label for="rx-upload-input" class="btn-upload-rx" role="button" tabindex="0">
+            @if (isPrescriptionUploaded()) {
+            <span>✓ {{ uploadedFileName() || 'Prescription Added' }}</span>
+            } @else {
+            <span>+ Upload Prescription</span>
+            }
+          </label>
+        </div>
+      </div>
+
+      <!-- Essential Medicines Catalog -->
+      <div class="medicine-catalog-section">
+        <div class="catalog-header">
+          <h4>Popular Health Essentials & Common Medicines</h4>
+          <span class="discount-pill">Flat 20% Discount Active</span>
+        </div>
+
+        <div class="medicine-items-grid">
+          @for (med of medicineProducts; track med.id) {
+          <div class="med-item-card">
+            <div class="med-item-info">
+              <span class="med-category">{{ med.category }}</span>
+              <strong class="med-name">{{ med.name }}</strong>
+              <small class="med-pack">{{ med.pack }}</small>
+            </div>
+            <div class="med-item-action">
+              <div class="med-pricing">
+                <span class="med-price">₹{{ med.price }}</span>
+                <span class="med-mrp">₹{{ med.mrp }}</span>
+              </div>
+              <button type="button" class="btn-add-cart" (click)="addToCart(med)">
+                + Add
+              </button>
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+
+      <!-- Live Cart & Checkout Footer -->
+      <div class="medicine-cart-footer">
+        <div class="cart-items-preview">
+          @if (medicineCart().length === 0) {
+          <span class="cart-empty-text">Your cart is empty. Add medicines above or upload your prescription.</span>
+          } @else {
+          <div class="cart-pills-list">
+            @for (item of medicineCart(); track item.id) {
+            <span class="cart-pill">
+              {{ item.name }} (x{{ item.qty }})
+              <button type="button" class="btn-remove-cart" (click)="removeFromCart(item.id)">✕</button>
+            </span>
+            }
+          </div>
+          }
+        </div>
+
+        <div class="cart-checkout-bar">
+          <div class="cart-total-block">
+            <small>Express Delivery Total</small>
+            <strong>₹{{ cartTotal() }}</strong>
+          </div>
+          <button type="button" class="btn-checkout-medicine" [disabled]="medicineCart().length === 0 && !isPrescriptionUploaded()" (click)="checkoutMedicineOrder()">
+            Place Order with 20% Discount
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
   }
 </div>

@@ -1,7 +1,7 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { RouterModule, ActivatedRoute } from '@angular/router';
 import { 
   ClinicalService, 
   Patient, 
@@ -10,6 +10,7 @@ import {
   Prescription 
 } from '../../services/clinical.service';
 import { AuthService, UserSession } from '../../services/auth.service';
+import { PrescriptionService, FullPrescription } from '../../services/prescription.service';
 
 @Component({
   selector: 'app-patient-portal',
@@ -19,15 +20,28 @@ import { AuthService, UserSession } from '../../services/auth.service';
   styleUrls: ['./patient-portal.css']
 })
 export class PatientPortalComponent implements OnInit {
+  private clinicalService = inject(ClinicalService);
+  private authService = inject(AuthService);
+  private prescriptionService = inject(PrescriptionService);
+  private route = inject(ActivatedRoute);
+  private cdr = inject(ChangeDetectorRef);
+
   currentUser: UserSession | null = null;
-  patientId: string = '';
+  patientId: string = 'PT-88341';
   currentPatient: Patient | null = null;
+
+  activePortalTab = signal<'all' | 'appointments' | 'records' | 'prescriptions'>('all');
+
+  // Reactive signal of rich prescriptions synchronized across doctor & patient
+  fullPrescriptions = computed(() => {
+    return this.prescriptionService.getPrescriptionsForPatient(this.patientId);
+  });
 
   slots: AppointmentSlot[] = [];
   patientPrescriptions: Prescription[] = [];
   patientConsultations: Consultation[] = [];
 
-  doctorId: string = '12345';
+  doctorId: string = 'DOC-CARD-001';
   selectedSlotId: number | null = null;
   bookingMessage: string = '';
   bookingSuccess: boolean = false;
@@ -41,12 +55,6 @@ export class PatientPortalComponent implements OnInit {
     '01:00 PM - 02:00 PM'
   ];
 
-  constructor(
-    private clinicalService: ClinicalService,
-    private authService: AuthService,
-    private cdr: ChangeDetectorRef
-  ) {}
-
   ngOnInit(): void {
     this.currentUser = this.authService.getUser();
     
@@ -54,9 +62,23 @@ export class PatientPortalComponent implements OnInit {
       this.patientId = this.currentUser.patient_id;
     }
 
+    // React to query parameter tabs (e.g. /patient?tab=prescriptions)
+    this.route.queryParams.subscribe(params => {
+      if (params['tab']) {
+        const t = params['tab'].toLowerCase();
+        if (t === 'appointments' || t === 'records' || t === 'prescriptions') {
+          this.activePortalTab.set(t as any);
+        }
+      }
+    });
+
     // Immediately trigger fetchSlots() to populate the grid without delay
     this.fetchSlots();
     this.fetchPatientRecord();
+  }
+
+  downloadPrescription(rx: FullPrescription): void {
+    this.prescriptionService.printPrescriptionSlip(rx);
   }
 
   fetchSlots(): void {
@@ -181,5 +203,9 @@ export class PatientPortalComponent implements OnInit {
 
   printPrescriptionSlip(): void {
     window.print();
+  }
+
+  logout(): void {
+    this.authService.logout(true);
   }
 }

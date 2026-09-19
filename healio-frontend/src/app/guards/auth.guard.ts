@@ -6,18 +6,50 @@ export const authGuard: CanActivateFn = (route, state) => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
-  const user = authService.getUser();
-  if (!user) {
-    router.navigate(['/login']);
+  let user = authService.getUser();
+  const expectedRole = route.data?.['role'];
+
+  // Check doctor session from localStorage or authService
+  if (expectedRole === 'doctor') {
+    const role = typeof localStorage !== 'undefined' ? localStorage.getItem('healio_role') : null;
+    const docSaved = typeof localStorage !== 'undefined' ? localStorage.getItem('healio_doctor_session') : null;
+    if (role === 'doctor' && docSaved) {
+      try {
+        const doc = JSON.parse(docSaved);
+        if (doc && doc.email) {
+          return true;
+        }
+      } catch {}
+    }
+    if (user && user.role === 'doctor') {
+      return true;
+    }
+    router.navigate(['/splash']);
     return false;
   }
 
-  const expectedRole = route.data?.['role'];
-  if (expectedRole && user.role !== expectedRole) {
-    // If a patient attempts to access doctor route or vice versa, redirect
-    router.navigate([user.role === 'doctor' ? '/doctor' : '/patient']);
+  // Check patient session from localStorage or authService
+  if (expectedRole === 'patient') {
+    const patientSaved = typeof localStorage !== 'undefined' ? localStorage.getItem('healio_user') : null;
+    if (patientSaved) {
+      try {
+        const p = JSON.parse(patientSaved);
+        if (p && (p.email || p.username || p.name)) {
+          return true;
+        }
+      } catch {}
+    }
+    if (user && user.role === 'patient') {
+      return true;
+    }
+    router.navigate(['/splash']);
+    return false;
+  }
+
+  if (!user) {
+    router.navigate(['/splash']);
     return false;
   }
 
   return true;
-};
+};
