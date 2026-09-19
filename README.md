@@ -79,7 +79,7 @@ For testing and grading the Doctor Clinical Workspace, authenticate using the pr
 ## 🚀 Local Setup Instructions
 
 ### Prerequisites
-- Node.js (v18+)
+- pgAdmin4
 - Python (v3.10+)
 - Git
 
