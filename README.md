@@ -122,25 +122,92 @@ ng serve
 
 Ensure the following variables are configured across backend and frontend environments:
 
-### Backend Variables (Render / `.env`)
+### Backend Variables (Render / .env)
 
-| Variable | Type | Description | Example / Production Value |
-| :--- | :--- | :--- | :--- |
-| SECRET_KEY | String | Django secret key for cryptographic signing | django-insecure-prod-key |
-| DEBUG | Boolean | Enables debug mode locally; disable in production | False |
-| ALLOWED_HOSTS | List / String | Allowed domain hosts serving API requests | healio-backend-ugg5.onrender.com,localhost |
-| CORS_ALLOWED_ORIGINS | List / String | Allowed frontend origin domains | https://healio-app-black.vercel.app |
-| RESEND_API_KEY | Secret String | Resend API key for HTTP transactional OTP dispatch | re_xxxxxxxxxxxxxxxxx |
-| DEFAULT_FROM_EMAIL | String | Sender address for transactional emails | Healio <onboarding@resend.dev> |
+<table>
+  <thead>
+    <tr>
+      <th align="left">Variable</th>
+      <th align="left">Type</th>
+      <th align="left">Description</th>
+      <th align="left">Example / Production Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>SECRET_KEY</code></td>
+      <td>String</td>
+      <td>Django secret key for cryptographic signing</td>
+      <td><code>django-insecure-prod-key</code></td>
+    </tr>
+    <tr>
+      <td><code>DEBUG</code></td>
+      <td>Boolean</td>
+      <td>Enables debug mode locally; disable in production</td>
+      <td><code>False</code></td>
+    </tr>
+    <tr>
+      <td><code>ALLOWED_HOSTS</code></td>
+      <td>List / String</td>
+      <td>Allowed domain hosts serving API requests</td>
+      <td><code>healio-backend-ugg5.onrender.com,localhost</code></td>
+    </tr>
+    <tr>
+      <td><code>CORS_ALLOWED_ORIGINS</code></td>
+      <td>List / String</td>
+      <td>Allowed frontend origin domains</td>
+      <td><code>https://healio-app-black.vercel.app</code></td>
+    </tr>
+    <tr>
+      <td><code>RESEND_API_KEY</code></td>
+      <td>Secret String</td>
+      <td>Resend API key for HTTP transactional OTP dispatch</td>
+      <td><code>re_xxxxxxxxxxxxxxxxx</code></td>
+    </tr>
+    <tr>
+      <td><code>DEFAULT_FROM_EMAIL</code></td>
+      <td>String</td>
+      <td>Sender address for transactional emails</td>
+      <td><code>Healio &lt;onboarding@resend.dev&gt;</code></td>
+    </tr>
+  </tbody>
+</table>
 
----
+<br/>
 
-### Frontend Variables (Angular `src/environments/`)
+### Frontend Variables (Angular <code>src/environments/</code>)
 
-Configure in `src/environments/environment.ts` (local) and `src/environments/environment.prod.ts` (production):
+Configure in <code>src/environments/environment.ts</code> (local) and <code>src/environments/environment.prod.ts</code> (production):
 
-| Key | Type | Description | Production Value |
-| :--- | :--- | :--- | :--- |
-| production | Boolean | Flag enabling production optimizations | true |
-| apiUrl | String | Base backend API URL | https://healio-backend-ugg5.onrender.com |
-| appUrl | String | Client deployment URL | https://healio-app-black.vercel.app |
+<table>
+  <thead>
+    <tr>
+      <th align="left">Key</th>
+      <th align="left">Type</th>
+      <th align="left">Description</th>
+      <th align="left">Production Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>production</code></td>
+      <td>Boolean</td>
+      <td>Flag enabling production optimizations</td>
+      <td><code>true</code></td>
+    </tr>
+    <tr>
+      <td><code>apiUrl</code></td>
+      <td>String</td>
+      <td>Base backend API URL</td>
+      <td><code>https://healio-backend-ugg5.onrender.com</code></td>
+    </tr>
+    <tr>
+      <td><code>appUrl</code></td>
+      <td>String</td>
+      <td>Client deployment URL</td>
+      <td><code>https://healio-app-black.vercel.app</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<br/>
