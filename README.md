@@ -129,7 +129,7 @@ Ensure the following variables are configured across backend and frontend enviro
 | `SECRET_KEY` | String | Django secret key for cryptographic signing | `django-insecure-...` |
 | `DEBUG` | Boolean | Enables debug mode locally; disable in production | `False` |
 | `ALLOWED_HOSTS` | List / String | Allowed domain hosts serving API requests | `healio-backend-ugg5.onrender.com,localhost` |
-| `CORS_ALLOWED_ORIGINS` | List / String | Allowed frontend origin domains | `https://healio-app-black.vercel.app`[cite: 1] |
+| `CORS_ALLOWED_ORIGINS` | List / String | Allowed frontend origin domains | `https://healio-app-black.vercel.app` |
 | `RESEND_API_KEY` | Secret String | Resend API key for HTTP transactional OTP dispatch | `re_xxxxxxxxxxxxxxxxx` |
 | `DEFAULT_FROM_EMAIL` | String | Sender address for transactional emails | `Healio <onboarding@resend.dev>` |
 
@@ -143,4 +143,4 @@ Configure in `src/environments/environment.ts` (local) and `src/environments/env
 | :--- | :--- | :--- | :--- |
 | `production` | Boolean | Flag enabling production optimizations | `true` |
 | `apiUrl` | String | Base backend API URL | `https://healio-backend-ugg5.onrender.com` |
-| `appUrl` | String | Client deployment URL | `https://healio-app-black.vercel.app`[cite: 1] |
+| `appUrl` | String | Client deployment URL | `https://healio-app-black.vercel.app` |
