@@ -28,7 +28,6 @@ class SendOTPView(APIView):
         try:
             from django.core.mail import send_mail
             from django.conf import settings
-
             send_mail(
                 subject,
                 message,
@@ -37,12 +36,12 @@ class SendOTPView(APIView):
                 fail_silently=False,
             )
         except Exception as mail_err:
-            print(f"[OTP FALLBACK] Could not send email via SMTP: {mail_err}")
+            print(f"[OTP FALLBACK] Email failed to send via SMTP: {mail_err}")
             print(f"[OTP CODE FOR {email}]: {otp_code}")
 
         return Response({
-            "message": "OTP sent successfully",
-            "otp": otp_code  # Expose during testing/demo
+            'message': 'OTP sent successfully',
+            'otp': otp_code
         }, status=status.HTTP_200_OK)
 
 
