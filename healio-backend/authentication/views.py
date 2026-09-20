@@ -1,13 +1,15 @@
 import random
 import os
-import resend
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from django.core.mail import send_mail
+from django.conf import settings
 from django.db.models import Q
 from .models import EmailOTP
 from clinical.models import DoctorProfile
+
+DEFAULT_DOCTOR_EMAIL = "dr.ramesh.rao@healio.health"
 
 
 class SendOTPView(APIView):
@@ -16,34 +18,51 @@ class SendOTPView(APIView):
         if not email:
             return Response({'error': 'Email is required'}, status=status.HTTP_400_BAD_REQUEST)
 
+        # 1. Default Doctor Bypass (Provides immediate reliable demo key)
+        if email == DEFAULT_DOCTOR_EMAIL:
+            otp_code = "1234"
+            EmailOTP.objects.create(email=email, otp_code=otp_code)
+            return Response({
+                'message': 'Doctor test credentials verified. Passkey ready.',
+                'otp': otp_code
+            }, status=status.HTTP_200_OK)
+
+        # 2. Dynamic 4-digit code generation for general users / patients
         otp_code = str(random.randint(1000, 9999))
         EmailOTP.objects.create(email=email, otp_code=otp_code)
 
-        # Dispatch via Resend HTTP API (works over port 443 on Render)
-        resend_key = os.environ.get('RESEND_API_KEY')
-        if resend_key:
-            resend.api_key = resend_key
-            try:
-                resend.Emails.send({
-                    "from": "Healio <onboarding@resend.dev>",
-                    "to": email,
-                    "subject": "Your Healio Verification Passkey",
-                    "html": f"""
-                        <h2>Welcome to Healio</h2>
-                        <p>Your one-time verification code is: <strong>{otp_code}</strong></p>
-                        <p>This code will expire in 5 minutes.</p>
-                        <br>
-                        <p>Best regards,<br>Healio Healthcare Team</p>
-                    """
-                })
-            except Exception as e:
-                print(f"[RESEND ERROR]: {e}")
-        else:
-            print(f"[FALLBACK LOG] RESEND_API_KEY not found. Code for {email}: {otp_code}")
+        # 3. Deliver verification email to ANY address via Gmail SMTP
+        subject = "Your Healio Verification Passkey"
+        message = f"Welcome to Healio.\n\nYour one-time verification code is: {otp_code}\n\nThis code will expire in 5 minutes.\n\nBest regards,\nHealio Healthcare Team"
+        html_message = f"""
+            <div style="font-family: Arial, sans-serif; padding: 20px; color: #1e293b;">
+                <h2 style="color: #0284c7;">Welcome to Healio</h2>
+                <p>Use the verification passkey below to complete your login:</p>
+                <div style="font-size: 28px; font-weight: bold; letter-spacing: 4px; padding: 12px 0; color: #0f172a;">
+                    {otp_code}
+                </div>
+                <p style="color: #64748b; font-size: 13px;">This code will expire in 5 minutes.</p>
+                <br>
+                <p style="color: #334155; font-size: 14px;">Best regards,<br><strong>Healio Healthcare Team</strong></p>
+            </div>
+        """
+
+        try:
+            send_mail(
+                subject=subject,
+                message=message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[email],
+                html_message=html_message,
+                fail_silently=False,
+            )
+            print(f"[SUCCESS]: Email sent successfully to {email}")
+        except Exception as e:
+            print(f"[GMAIL SMTP ERROR]: {e}")
 
         return Response({
             'message': 'OTP sent successfully',
-            'otp': otp_code  # Keep visible during testing; remove before final launch
+            'otp': otp_code  # Retained in payload for instant test visibility
         }, status=status.HTTP_200_OK)
 
 
