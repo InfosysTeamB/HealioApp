@@ -469,10 +469,6 @@ Contributions are welcome! Please follow this workflow:
 3. Commit your modifications: `git commit -m 'feat: Add clinical telemetry metrics'`.
 4. Push to your branch: `git push origin feature/clinical-telemetry`.
 5. Open a Pull Request for review.
-
-### License
-This project is open-source and licensed under the **[MIT License](LICENSE)**.
-
 ---
 
 <div align="center">
