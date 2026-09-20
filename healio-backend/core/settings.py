@@ -11,6 +11,8 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
 from pathlib import Path
+import os
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -25,7 +27,7 @@ SECRET_KEY = 'django-insecure-jvd_$y88-lh8(n)3qz@08$grur%c9x*uvms5=!c2n!w1-1hjyk
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.onrender.com']
 
 
 # Application definition
@@ -62,7 +64,7 @@ CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:4200",
-    "http://127.0.0.1:4200",
+    "https://healio-app-black.vercel.app",
 ]
 CORS_ALLOW_HEADERS = [
     'accept',
@@ -118,6 +120,13 @@ DATABASES = {
     }
 }
 
+# Override with cloud database on Render if DATABASE_URL exists
+if 'DATABASE_URL' in os.environ:
+    DATABASES['default'] = dj_database_url.config(
+        conn_max_age=600,
+        ssl_require=True
+    )
+
 
 # Password validation
 # https://docs.djangoproject.com/en/6.1/ref/settings/#auth-password-validators
@@ -168,4 +177,4 @@ EMAIL_USE_SSL = False
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'harshithanamala04@gmail.com'
 EMAIL_HOST_PASSWORD = 'jgxlktrollqzqazp'
-DEFAULT_FROM_EMAIL = 'Healio Health <harshithanamala04@gmail.com>'
+DEFAULT_FROM_EMAIL = 'Healio Health <harshithanamala04@gmail.com>'
