@@ -1,6 +1,6 @@
 export const environment = {
   production: false,
-  apiBaseUrl: 'http://localhost:8000/api/v1',
+  apiBaseUrl: 'https://healio-backend-ugg5.onrender.com',
   /**
    * Google OAuth 2.0 Web Client ID from Google Cloud Console.
    * If you have a Google Cloud Project, generate a Web Client ID,
