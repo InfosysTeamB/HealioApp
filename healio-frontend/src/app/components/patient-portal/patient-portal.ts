@@ -35,7 +35,19 @@ export class PatientPortalComponent implements OnInit {
 
   // Reactive signal of rich prescriptions synchronized across doctor & patient
   fullPrescriptions = computed(() => {
-    return this.prescriptionService.getPrescriptionsForPatient(this.patientId);
+    const userEmail = (this.authService.currentUser()?.email || this.currentUser?.email || '').toLowerCase().trim();
+    const byPid = this.prescriptionService.getPrescriptionsForPatient(this.patientId);
+    if (userEmail && userEmail !== this.patientId.toLowerCase().trim()) {
+      const byEmail = this.prescriptionService.getPrescriptionsForPatient(userEmail);
+      const combined = [...byPid];
+      for (const rx of byEmail) {
+        if (!combined.some(c => c.id === rx.id)) {
+          combined.push(rx);
+        }
+      }
+      return combined;
+    }
+    return byPid;
   });
 
   // Practo-Style Reactive Consultations State

@@ -30,6 +30,12 @@ export const authGuard: CanActivateFn = (route, state) => {
 
   // Check patient session from localStorage or authService
   if (expectedRole === 'patient') {
+    const role = typeof localStorage !== 'undefined' ? localStorage.getItem('healio_role') : null;
+    if (role === 'doctor') {
+      router.navigate(['/doctor-portal']);
+      return false;
+    }
+
     const patientSaved = typeof localStorage !== 'undefined' ? localStorage.getItem('healio_user') : null;
     if (patientSaved) {
       try {

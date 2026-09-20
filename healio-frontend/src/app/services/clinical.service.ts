@@ -115,6 +115,7 @@ export interface NotificationStatus {
 })
 export class ClinicalService {
   readonly appointments = signal<AppointmentRecord[]>([]);
+  readonly prescriptions = signal<any[]>([]);
 
   private get v1Url(): string {
     const host = window.location.hostname || 'localhost';
@@ -123,6 +124,24 @@ export class ClinicalService {
 
   constructor(private http: HttpClient) {
     this.loadAppointmentsFromStorage();
+    this.loadPrescriptionsFromStorage();
+  }
+
+  private loadPrescriptionsFromStorage(): void {
+    if (typeof localStorage === 'undefined') return;
+    try {
+      const raw = localStorage.getItem('healio_prescriptions');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          this.prescriptions.set(parsed);
+        }
+      }
+    } catch {}
+  }
+
+  addPrescription(rx: any): void {
+    this.prescriptions.update(prev => [rx, ...prev]);
   }
 
   private loadAppointmentsFromStorage(): void {
@@ -141,8 +160,8 @@ export class ClinicalService {
     }
 
     // Default initial seed if completely empty
-    let userEmail = 'patient@healio.health';
-    let userName = 'Patient User';
+    let userEmail = 'alex.johnson@healio.health';
+    let userName = 'Alex Johnson';
     try {
       const savedUser = localStorage.getItem('healio_user');
       if (savedUser) {
@@ -162,7 +181,33 @@ export class ClinicalService {
         doctorSpecialization: 'Cardiologist',
         doctorClinic: 'Apollo Cradle Clinic',
         date: 'Today',
-        timeSlot: '4:30 PM',
+        timeSlot: '04:30 PM',
+        status: 'Confirmed',
+        doctorAvatar: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=300&auto=format&fit=crop&q=80'
+      },
+      {
+        id: 'APPT-DEMO-002',
+        consultationType: 'video',
+        patientEmail: 'priya.sharma@example.com',
+        patientName: 'Priya Sharma',
+        doctorName: 'Dr. Ramesh Rao',
+        doctorSpecialization: 'Cardiologist',
+        doctorClinic: 'Apollo Cradle Clinic',
+        date: 'Today',
+        timeSlot: '05:30 PM',
+        status: 'Confirmed',
+        doctorAvatar: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=300&auto=format&fit=crop&q=80'
+      },
+      {
+        id: 'APPT-DEMO-003',
+        consultationType: 'in-person',
+        patientEmail: 'vikram.mehta@example.com',
+        patientName: 'Vikram Mehta',
+        doctorName: 'Dr. Ramesh Rao',
+        doctorSpecialization: 'Cardiologist',
+        doctorClinic: 'Apollo Cradle Clinic',
+        date: 'Today',
+        timeSlot: '06:15 PM',
         status: 'Confirmed',
         doctorAvatar: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=300&auto=format&fit=crop&q=80'
       }

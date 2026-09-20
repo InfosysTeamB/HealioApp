@@ -6,20 +6,14 @@
       <div>
         <h2 class="portal-title">Doctor Workspace</h2>
         <div class="physician-meta-line">
-          <span class="physician-name">{{ doctorData?.doctor?.name || 'Dr. Ramesh Rao' }}</span>
-          <span class="physician-badge">{{ doctorId }}</span>
-          <span class="specialization-tag">{{ doctorData?.doctor?.specialization || 'Cardiologist' }}</span>
-          <span class="clinic-tag">Apollo Cradle Clinic</span>
+          <span class="physician-name">{{ doctorProfile().name }}</span>
+          <span class="physician-badge">{{ doctorProfile().doctorId }}</span>
+          <span class="specialization-tag">{{ doctorProfile().specialization }}</span>
+          <span class="clinic-tag">{{ doctorProfile().clinic }}</span>
         </div>
       </div>
     </div>
     <div class="header-actions">
-      <a routerLink="/patient" class="btn-switch-portal" title="Open Patient Portal View">
-        <span>View Patient Portal</span>
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M5 12h14M12 5l7 7-7 7"/>
-        </svg>
-      </a>
       <button type="button" class="btn-refresh" (click)="loadDoctorPortalData()" [disabled]="isLoading" title="Refresh portal data">
         <svg class="icon-refresh" [class.spin]="isLoading" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
@@ -57,7 +51,7 @@
     <div class="metric-card">
       <div class="metric-icon icon-appointments">📅</div>
       <div class="metric-content">
-        <span class="metric-value">{{ doctorData?.stats?.today_appointments ?? 0 }}</span>
+        <span class="metric-value">{{ doctorRoster().length }}</span>
         <span class="metric-label">Booked Appointments</span>
       </div>
     </div>
@@ -73,7 +67,7 @@
     <div class="metric-card">
       <div class="metric-icon icon-rx">💊</div>
       <div class="metric-content">
-        <span class="metric-value">{{ doctorData?.stats?.prescriptions_issued ?? prescriptions.length ?? 0 }}</span>
+        <span class="metric-value">{{ prescriptionsIssuedCount() }}</span>
         <span class="metric-label">Prescriptions Issued</span>
       </div>
     </div>
@@ -100,22 +94,38 @@
   <!-- VIEW 1: CLINICAL CHARTING & PATIENT HISTORY -->
   <div *ngIf="activeWorkspaceView === 'clinical'">
     <!-- Today's Appointment Roster Strip -->
-    <section class="roster-strip" *ngIf="doctorData?.roster && doctorData!.roster.length > 0">
+    <section class="roster-strip">
       <div class="roster-header">
         <h4 class="roster-title">⚡ Today's Appointment Roster</h4>
-        <span class="roster-count">{{ doctorData!.roster.length }} Scheduled</span>
+        <span class="roster-count">{{ doctorRoster().length }} Scheduled</span>
       </div>
-      <div class="roster-chips">
-        <div 
-          *ngFor="let item of doctorData!.roster" 
-          class="roster-chip"
-          [class.active]="item.patient === selectedPatientId"
-          (click)="selectRosterSlot(item)">
-          <span class="chip-day">{{ item.day }} • {{ item.time_slot }}</span>
-          <strong class="chip-name">{{ item.patient_name || item.patient }}</strong>
-          <span class="chip-pid">{{ item.patient }}</span>
+      
+      @if (doctorRoster().length > 0) {
+        <div class="roster-chips">
+          @for (patient of doctorRoster(); track patient.id) {
+            <div 
+              class="roster-chip"
+              [class.active]="activePatient()?.id === patient.id"
+              (click)="selectRosterPatient(patient)">
+              <div class="chip-meta-row">
+                <span class="chip-day">{{ patient.date }} • {{ patient.timeSlot }}</span>
+                <span 
+                  class="consult-type-pill-sm" 
+                  [class.type-video]="patient.type === 'video'" 
+                  [class.type-inperson]="patient.type === 'in-person'">
+                  {{ patient.type === 'video' ? '📹 Video' : '🏥 In-Person' }}
+                </span>
+              </div>
+              <strong class="chip-name">{{ patient.name }}</strong>
+              <span class="chip-pid">{{ patient.patientId }}</span>
+            </div>
+          }
         </div>
-      </div>
+      } @else {
+        <div class="empty-roster-message">
+          <p>No appointments scheduled for this doctor today.</p>
+        </div>
+      }
     </section>
 
     <!-- Patient Selection Header Bar -->
@@ -132,18 +142,18 @@
 
       <div class="selector-group flex-2">
         <label for="patientSelect">Active Patient Record:</label>
-        <select id="patientSelect" [(ngModel)]="selectedPatientId" (change)="onPatientChange()" class="patient-select">
-          <option *ngFor="let p of filteredPatients" [value]="p.patient_id">
-            {{ p.patient_id }} — {{ p.full_name }} (DOB: {{ p.date_of_birth }})
+        <select id="patientSelect" [(ngModel)]="selectedPatientId" (change)="onPatientSelectChange()" class="patient-select">
+          <option *ngFor="let p of availableSelectorPatients" [value]="p.patientId || p.patient_id">
+            {{ p.patientId || p.patient_id }} — {{ p.name || p.full_name }} (DOB: {{ p.date_of_birth || '1992-05-14' }})
           </option>
         </select>
       </div>
 
       <!-- Active Patient Quick Medical Badge -->
-      <div class="patient-quick-badge" *ngIf="activePatient?.profile">
-        <span class="badge-tag">Blood: <strong>{{ activePatient?.profile?.blood_group }}</strong></span>
-        <span class="badge-tag">Allergies: <strong>{{ activePatient?.profile?.allergies || 'None' }}</strong></span>
-        <span class="badge-tag">Conditions: <strong>{{ activePatient?.profile?.chronic_conditions || 'None' }}</strong></span>
+      <div class="patient-quick-badge" *ngIf="activePatient()?.profile">
+        <span class="badge-tag">Blood: <strong>{{ activePatient()?.profile?.blood_group }}</strong></span>
+        <span class="badge-tag">Allergies: <strong>{{ activePatient()?.profile?.allergies || 'None' }}</strong></span>
+        <span class="badge-tag">Conditions: <strong>{{ activePatient()?.profile?.chronic_conditions || 'None' }}</strong></span>
       </div>
     </section>
 
@@ -239,7 +249,7 @@
         <div class="card history-card">
           <div class="card-header-row">
             <h3>Patient Clinical Records ({{ selectedPatientId }})</h3>
-            <span class="patient-sub">{{ activePatient?.full_name }}</span>
+            <span class="patient-sub">{{ activePatient()?.name || activePatient()?.full_name }}</span>
           </div>
 
           <div class="history-section">

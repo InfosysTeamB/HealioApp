@@ -55,7 +55,12 @@ export class SplashComponent implements OnInit {
 
   ngOnInit(): void {
     if (this.authService.isAuthenticated()) {
-      this.router.navigate(['/home']);
+      const user = this.authService.getUser();
+      if (user?.role === 'doctor') {
+        this.router.navigate(['/doctor-portal']);
+      } else {
+        this.router.navigate(['/home']);
+      }
       return;
     }
 
@@ -82,18 +87,42 @@ export class SplashComponent implements OnInit {
   }
 
   isValidProfile(): boolean {
+    const isTestingDoc = this.email().trim().toLowerCase() === 'dr.ramesh.rao@healio.health';
+    if (isTestingDoc) return true;
     return this.isValidEmail() && this.fullName().trim().length >= 2;
   }
 
-  // 1. Send OTP through Django Backend
+  // 1. Send OTP through Django Backend (with Demo Doctor Bypass)
   sendOtp(): void {
+    const trimmedEmail = this.email().trim().toLowerCase();
+
+    // Default testing doctor bypass
+    if (trimmedEmail === 'dr.ramesh.rao@healio.health') {
+      if (!this.fullName().trim()) {
+        this.fullName.set('Dr. Ramesh Rao');
+      }
+      if (!this.phone().trim()) {
+        this.phone.set('+91 98450 12345');
+      }
+      this.otpDigits = ['1', '2', '3', '4'];
+      this.step.set('otp');
+      this.successBanner.set('Demo Doctor Mode: Passcode auto-filled (1234)');
+      this.errorMessage.set(null);
+      this.cdr.detectChanges();
+
+      setTimeout(() => {
+        this.focusInput(3);
+      }, 100);
+      return;
+    }
+
     if (!this.isValidProfile() || this.isSendingEmail()) return;
 
     this.isSendingEmail.set(true);
     this.errorMessage.set(null);
 
     const payload = {
-      email: this.email().trim().toLowerCase()
+      email: trimmedEmail
     };
 
     this.http.post<{ message?: string; error?: string; dev_otp?: string }>(`${this.authBaseUrl}/send-otp/`, payload)
@@ -126,12 +155,43 @@ export class SplashComponent implements OnInit {
   verifyOtp(): void {
     if (!this.isOtpComplete() || this.isLoading()) return;
 
+    const trimmedEmail = this.email().trim().toLowerCase();
+    const enteredOtp = this.otpDigits.join('').trim();
+
+    // Default testing doctor bypass verification
+    if (trimmedEmail === 'dr.ramesh.rao@healio.health' && enteredOtp === '1234') {
+      // Clear any existing patient session
+      localStorage.removeItem('healio_user');
+
+      // Store healio_doctor_session
+      const doctorSession = {
+        doctorId: 'DOC-CRD-01',
+        name: 'Dr. Ramesh Rao',
+        email: 'dr.ramesh.rao@healio.health',
+        phone: '+91 98450 12345',
+        specialization: 'Cardiologist',
+        clinic: 'Apollo Cradle Clinic',
+        role: 'doctor',
+        token: 'healio-demo-doctor-jwt'
+      };
+
+      localStorage.setItem('healio_doctor_session', JSON.stringify(doctorSession));
+      localStorage.setItem('healio_role', 'doctor');
+
+      // Sync into AuthService for app-wide state consistency
+      this.authService.setDoctorSession(doctorSession);
+
+      // Navigate directly to Doctor Portal workspace
+      this.router.navigate(['/doctor-portal']);
+      return;
+    }
+
     this.isLoading.set(true);
     this.errorMessage.set(null);
 
     const payload = {
-      email: this.email().trim().toLowerCase(),
-      otp: this.otpDigits.join('').trim()
+      email: trimmedEmail,
+      otp: enteredOtp
     };
 
     this.http.post<{

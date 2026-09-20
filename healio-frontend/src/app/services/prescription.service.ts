@@ -12,6 +12,7 @@ export interface FullPrescription {
   id: string;
   patientId: string;
   patientName: string;
+  patientEmail?: string;
   doctorId: string;
   doctorName: string;
   doctorSpecialty: string;
@@ -100,11 +101,14 @@ export class PrescriptionService {
     });
   }
 
-  getPrescriptionsForPatient(patientId: string): FullPrescription[] {
+  getPrescriptionsForPatient(patientIdOrEmail: string): FullPrescription[] {
     const all = this.prescriptions();
-    if (!patientId) return all;
+    if (!patientIdOrEmail) return all;
+    const target = patientIdOrEmail.toLowerCase().trim();
     return all.filter(
-      (rx) => rx.patientId.toLowerCase() === patientId.toLowerCase()
+      (rx) =>
+        (rx.patientId && rx.patientId.toLowerCase().trim() === target) ||
+        (rx.patientEmail && rx.patientEmail.toLowerCase().trim() === target)
     );
   }
 

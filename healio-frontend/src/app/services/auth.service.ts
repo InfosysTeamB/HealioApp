@@ -151,6 +151,20 @@ export class AuthService {
     return demoDoctor;
   }
 
+  setDoctorSession(doctorSession: any): void {
+    const session: UserSession = {
+      token: doctorSession.token || 'healio-demo-doctor-jwt',
+      username: doctorSession.email ? doctorSession.email.split('@')[0] : 'dr_ramesh_rao',
+      name: doctorSession.name || 'Dr. Ramesh Rao',
+      email: doctorSession.email,
+      phone: doctorSession.phone,
+      role: 'doctor',
+      doctor_id: doctorSession.doctorId || doctorSession.doctor_id || 'DOC-CRD-01'
+    };
+    this.currentUserSubject.next(session);
+    this.currentUser.set(session);
+  }
+
   setAuthenticatedUser(user: UserSession): void {
     localStorage.setItem('healio_user', JSON.stringify(user));
     this.currentUserSubject.next(user);
