@@ -1,4 +1,6 @@
 import random
+import os
+import resend
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -17,31 +19,31 @@ class SendOTPView(APIView):
         otp_code = str(random.randint(1000, 9999))
         EmailOTP.objects.create(email=email, otp_code=otp_code)
 
-        subject = 'Your Healio Verification Passkey'
-        message = (
-            f"Welcome to Healio.\n\n"
-            f"Your one-time verification code is: {otp_code}\n\n"
-            f"This code will expire in 5 minutes.\n\n"
-            f"Best regards,\nHealio Healthcare Team"
-        )
-
-        try:
-            from django.core.mail import send_mail
-            from django.conf import settings
-            send_mail(
-                subject,
-                message,
-                getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@healio.com'),
-                [email],
-                fail_silently=False,
-            )
-        except Exception as mail_err:
-            print(f"[OTP FALLBACK] Email failed to send via SMTP: {mail_err}")
-            print(f"[OTP CODE FOR {email}]: {otp_code}")
+        # Dispatch via Resend HTTP API (works over port 443 on Render)
+        resend_key = os.environ.get('RESEND_API_KEY')
+        if resend_key:
+            resend.api_key = resend_key
+            try:
+                resend.Emails.send({
+                    "from": "Healio <onboarding@resend.dev>",
+                    "to": email,
+                    "subject": "Your Healio Verification Passkey",
+                    "html": f"""
+                        <h2>Welcome to Healio</h2>
+                        <p>Your one-time verification code is: <strong>{otp_code}</strong></p>
+                        <p>This code will expire in 5 minutes.</p>
+                        <br>
+                        <p>Best regards,<br>Healio Healthcare Team</p>
+                    """
+                })
+            except Exception as e:
+                print(f"[RESEND ERROR]: {e}")
+        else:
+            print(f"[FALLBACK LOG] RESEND_API_KEY not found. Code for {email}: {otp_code}")
 
         return Response({
             'message': 'OTP sent successfully',
-            'otp': otp_code
+            'otp': otp_code  # Keep visible during testing; remove before final launch
         }, status=status.HTTP_200_OK)
 
 
