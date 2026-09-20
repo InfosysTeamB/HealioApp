@@ -1,11 +1,9 @@
 import random
 import os
-import threading
+import requests
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from django.core.mail import send_mail
-from django.conf import settings
 from django.db.models import Q
 from .models import EmailOTP
 from clinical.models import DoctorProfile
@@ -13,33 +11,45 @@ from clinical.models import DoctorProfile
 DEFAULT_DOCTOR_EMAIL = "dr.ramesh.rao@healio.health"
 
 
-def send_otp_async(email, otp_code):
-    subject = "Your Healio Verification Passkey"
-    message = f"Welcome to Healio.\n\nYour one-time verification code is: {otp_code}\n\nThis code will expire in 5 minutes.\n\nBest regards,\nHealio Healthcare Team"
-    html_message = f"""
-        <div style="font-family: Arial, sans-serif; padding: 20px; color: #1e293b;">
-            <h2 style="color: #0284c7;">Welcome to Healio</h2>
-            <p>Use the verification passkey below to complete your login:</p>
-            <div style="font-size: 28px; font-weight: bold; letter-spacing: 4px; padding: 12px 0; color: #0f172a;">
-                {otp_code}
+def send_otp_via_brevo(email, otp_code):
+    brevo_key = os.environ.get('BREVO_API_KEY')
+    if not brevo_key:
+        print("[BREVO WARNING]: BREVO_API_KEY environment variable not set.")
+        return
+
+    url = "https://api.brevo.com/v3/smtp/email"
+    headers = {
+        "accept": "application/json",
+        "api-key": brevo_key,
+        "content-type": "application/json"
+    }
+    payload = {
+        "sender": {
+            "name": "Healio Health",
+            "email": "harshithanamala04@gmail.com"
+        },
+        "to": [
+            {"email": email}
+        ],
+        "subject": "Your Healio Verification Passkey",
+        "htmlContent": f"""
+            <div style="font-family: Arial, sans-serif; padding: 24px; color: #1e293b; max-width: 480px; margin: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <h2 style="color: #0284c7; margin-top: 0;">Welcome to Healio</h2>
+                <p style="font-size: 15px;">Use the verification passkey below to complete your login:</p>
+                <div style="font-size: 32px; font-weight: 700; letter-spacing: 6px; padding: 16px 0; color: #0f172a; text-align: center;">
+                    {otp_code}
+                </div>
+                <p style="color: #64748b; font-size: 13px;">This code will expire in 5 minutes.</p>
+                <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+                <p style="color: #334155; font-size: 13px; margin-bottom: 0;">Best regards,<br><strong>Healio Healthcare Team</strong></p>
             </div>
-            <p style="color: #64748b; font-size: 13px;">This code will expire in 5 minutes.</p>
-            <br>
-            <p style="color: #334155; font-size: 14px;">Best regards,<br><strong>Healio Healthcare Team</strong></p>
-        </div>
-    """
+        """
+    }
     try:
-        send_mail(
-            subject=subject,
-            message=message,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[email],
-            html_message=html_message,
-            fail_silently=False,
-        )
-        print(f"[SUCCESS]: Email sent successfully to {email}")
-    except Exception as e:
-        print(f"[GMAIL SMTP ERROR]: {e}")
+        response = requests.post(url, json=payload, headers=headers, timeout=8)
+        print(f"[BREVO RESPONSE {response.status_code}]: {response.text}")
+    except Exception as exc:
+        print(f"[BREVO DISPATCH ERROR]: {exc}")
 
 
 class SendOTPView(APIView):
@@ -61,14 +71,12 @@ class SendOTPView(APIView):
         otp_code = str(random.randint(1000, 9999))
         EmailOTP.objects.create(email=email, otp_code=otp_code)
 
-        # 3. Deliver verification email in background thread to prevent Gunicorn worker timeout
-        thread = threading.Thread(target=send_otp_async, args=(email, otp_code))
-        thread.daemon = True
-        thread.start()
+        # 3. Deliver verification email directly via Brevo HTTPS API
+        send_otp_via_brevo(email, otp_code)
 
         return Response({
             'message': 'OTP sent successfully',
-            'otp': otp_code  # Retained in payload for instant test visibility
+            'otp': otp_code  # Retained in payload for testing/evaluation backup
         }, status=status.HTTP_200_OK)
 
 
