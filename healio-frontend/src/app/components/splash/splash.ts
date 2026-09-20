@@ -13,6 +13,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { AuthService, UserSession } from '../../services/auth.service';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-splash',
@@ -49,8 +50,7 @@ export class SplashComponent implements OnInit {
   private splashTimerRef: any;
 
   private get authBaseUrl(): string {
-    const host = typeof window !== 'undefined' && window.location.hostname ? window.location.hostname : 'localhost';
-    return `http://${host}:8000/api/auth`;
+    return `${environment.apiBaseUrl}/api/auth`;
   }
 
   ngOnInit(): void {
