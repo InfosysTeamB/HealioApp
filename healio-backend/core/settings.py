@@ -170,7 +170,8 @@ STATIC_URL = 'static/'
 
 # Modern Django 6 Email Configuration (Gmail SMTP)
 # Gmail SSL Configuration (Port 465 avoids ISP port 587 blocks)
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# Gmail SMTP Configuration
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_SSL = False
