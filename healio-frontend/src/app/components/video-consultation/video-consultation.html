@@ -1,0 +1,765 @@
+<div class="telehealth-container" [class.summary-mode]="callPhase() === 'ended'">
+
+  <!-- ================= IN-CALL CONSULTATION STAGE ================= -->
+  @if (callPhase() === 'in-call') {
+  <div class="call-stage-wrapper">
+
+    <!-- Top TeleHealth Header -->
+    <header class="call-top-bar" role="banner">
+      <div class="top-brand-group">
+        <div class="telehealth-brand">
+          <span class="healio-logo">healio</span>
+          <span class="telehealth-tag">TeleHealth</span>
+        </div>
+        <span class="security-chip" title="HIPAA Compliant End-to-End Encryption">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#10B981" stroke-width="2.2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+          <span>256-bit Encrypted</span>
+        </span>
+      </div>
+
+      <div class="call-center-meta">
+        <!-- Room ID with Copy Link -->
+        <button class="room-pill-btn" type="button" (click)="copyRoomLink()" title="Click to copy consultation link">
+          <span class="room-label">Room:</span>
+          <strong class="room-code">#{{ roomId() }}</strong>
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+          </svg>
+          @if (copyLinkSuccess()) {
+            <span class="copied-toast">Copied!</span>
+          }
+        </button>
+
+        <!-- Live Running Timer -->
+        <div class="timer-pill" aria-label="Call Duration">
+          <span class="rec-dot"></span>
+          <span class="timer-text">{{ formattedDuration }}</span>
+        </div>
+
+        <!-- Connection Quality -->
+        <div class="network-badge" [title]="'Latency: ' + networkLatency() + 'ms • Full HD 1080p'">
+          <div class="signal-bars">
+            <span class="bar b1 active"></span>
+            <span class="bar b2 active"></span>
+            <span class="bar b3 active"></span>
+            <span class="bar b4 active"></span>
+          </div>
+          <span class="net-text">HD {{ networkLatency() }}ms</span>
+        </div>
+      </div>
+
+      <div class="top-actions-group">
+        <button class="btn-top-leave" type="button" (click)="promptEndCall()" title="Leave consultation">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+          <span>End Session</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Video Grid -->
+    <main class="video-grid-canvas">
+
+      <!-- Remote Doctor Video Tile (Primary) -->
+      <section class="remote-video-card" [class.doctor-speaking]="isDoctorSpeaking()">
+        
+        <!-- Screen Sharing Layer (if active) -->
+        @if (isScreenSharing()) {
+          <div class="screenshare-active-container">
+            <video #screenVideo autoplay playsinline class="screen-video-feed"></video>
+            <div class="screenshare-indicator">
+              <span>🖥️ Sharing Screen / Clinical Records</span>
+              <button (click)="stopScreenShare()" class="btn-stop-share">Stop Sharing</button>
+            </div>
+          </div>
+        } @else {
+          <!-- Doctor Video Presentation -->
+          <div class="doctor-stream-view">
+            <img [src]="doctorAvatar()" [alt]="doctorName()" class="doctor-avatar-backdrop" />
+            <div class="stream-glass-overlay"></div>
+
+            <!-- Doctor Live Speaking Wave -->
+            @if (isDoctorSpeaking()) {
+              <div class="speaker-wave-container">
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+                <span class="wave-text">{{ doctorName() }} is speaking...</span>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- Doctor Overlay Metadata Card -->
+        <div class="doctor-meta-strip">
+          <div class="doctor-name-col">
+            <div class="doc-badge-title">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="#10B981">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M9 12l2 2 4-4" stroke="#FFFFFF" stroke-width="2" fill="none" />
+              </svg>
+              <h3>{{ doctorName() }}</h3>
+            </div>
+            <span class="doc-spec-line">{{ doctorSpecialty() }} • {{ doctorClinic() }}</span>
+            <small class="doc-reg-pill">Medical Reg: {{ doctorRegNo() }}</small>
+          </div>
+
+          <div class="doctor-status-badge">
+            <span class="status-live-dot"></span>
+            <span>LIVE CONSULTATION</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Local Patient Video Tile (Picture-in-Picture) -->
+      <aside 
+        class="local-pip-card" 
+        [class.minimized]="isLocalPiPMinimized()"
+        [class.pip-audio-only]="!isCameraOn() || hasCameraError()">
+        
+        <!-- Live Real Webcam Video -->
+        <video 
+          #localVideo 
+          autoplay 
+          playsinline 
+          muted 
+          class="local-video-feed"
+          [style.display]="isCameraOn() && !hasCameraError() ? 'block' : 'none'">
+        </video>
+
+        <!-- Camera Off / Fallback Avatar -->
+        @if (!isCameraOn() || hasCameraError()) {
+          <div class="pip-camera-off">
+            <div class="pip-avatar-circle">
+              {{ patientName().charAt(0) }}
+            </div>
+            <span class="pip-off-msg">{{ hasCameraError() ? 'Camera Unavailable' : 'Camera Muted' }}</span>
+          </div>
+        }
+
+        <!-- Local Tile Status Overlay -->
+        <div class="pip-header-bar">
+          <span class="pip-name">{{ patientName() }} (You)</span>
+          <div class="pip-icons">
+            @if (!isMicOn()) {
+              <span class="pip-icon-muted" title="Microphone muted">🔇</span>
+            }
+            @if (!isCameraOn() || hasCameraError()) {
+              <span class="pip-icon-muted" title="Video muted">🚫</span>
+            }
+          </div>
+        </div>
+      </aside>
+
+      <!-- ================= SLIDE-OVER DRAWERS ================= -->
+
+      <!-- 1. In-Call Live Chat Drawer -->
+      @if (activeDrawer() === 'chat') {
+        <aside class="side-drawer chat-drawer" aria-label="In-Call Chat">
+          <div class="drawer-header">
+            <div class="drawer-title-group">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#10B981" stroke-width="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+              <h4>Clinical Consultation Chat</h4>
+            </div>
+            <button class="drawer-close" type="button" (click)="closeDrawer()" aria-label="Close chat">✕</button>
+          </div>
+
+          <div class="drawer-body chat-messages-stream">
+            @for (msg of chatMessages(); track msg.id) {
+              <div class="chat-bubble-row" [class.from-patient]="msg.sender === 'patient'" [class.from-doctor]="msg.sender === 'doctor'" [class.from-system]="msg.sender === 'system'">
+                @if (msg.sender !== 'system') {
+                  <div class="bubble-meta">
+                    <strong>{{ msg.senderName }}</strong>
+                    @if (msg.badge) {
+                      <span class="bubble-badge">{{ msg.badge }}</span>
+                    }
+                    <small>{{ msg.time }}</small>
+                  </div>
+                }
+                <div class="bubble-content">
+                  {{ msg.text }}
+                </div>
+              </div>
+            }
+          </div>
+
+          <!-- Quick Symptoms Tap Chips -->
+          <div class="quick-symptoms-bar">
+            <small class="quick-label">Tap to share symptom with doctor:</small>
+            <div class="symptom-chips-row">
+              <button type="button" (click)="sendQuickSymptom('Fever (101°F) and chills since morning')">🌡️ Fever (101°F)</button>
+              <button type="button" (click)="sendQuickSymptom('Severe throat ache & difficulty swallowing')">🗣️ Sore Throat</button>
+              <button type="button" (click)="sendQuickSymptom('Persistent headache & exhaustion')">🤕 Headache</button>
+              <button type="button" (click)="sendQuickSymptom('Can you please review my medicine dosage?')">💊 Review Dosage</button>
+            </div>
+          </div>
+
+          <!-- Chat Input Row -->
+          <form class="chat-input-bar" (ngSubmit)="sendChatMessage()">
+            <input 
+              type="text" 
+              placeholder="Ask doctor a question..." 
+              [(ngModel)]="chatInput" 
+              name="chatInput" 
+              autocomplete="off" />
+            <button type="submit" class="btn-send-chat" [disabled]="!chatInput.trim()" title="Send Message">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="22" y1="2" x2="11" y2="13"/>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+              </svg>
+            </button>
+          </form>
+        </aside>
+      }
+
+      <!-- 2. Patient Vitals Drawer -->
+      @if (activeDrawer() === 'vitals') {
+        <aside class="side-drawer vitals-drawer" aria-label="Patient Vitals">
+          <div class="drawer-header">
+            <div class="drawer-title-group">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#10B981" stroke-width="2">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+              </svg>
+              <h4>Patient Health Chart & Vitals</h4>
+            </div>
+            <button class="drawer-close" type="button" (click)="closeDrawer()">✕</button>
+          </div>
+
+          <div class="drawer-body vitals-body">
+            <div class="patient-id-card">
+              <h4>{{ patientName() }}</h4>
+              <span>Patient ID: <strong>{{ patientId() }}</strong> • Age: {{ patientAge() }} ({{ patientGender() }})</span>
+              <span class="blood-group-tag">Blood Group: {{ patientBloodGroup() }}</span>
+            </div>
+
+            <div class="vitals-matrix-grid">
+              <div class="vital-metric-card">
+                <span class="v-icon">💓</span>
+                <span class="v-label">Pulse / Heart Rate</span>
+                <strong class="v-val">{{ patientVitals().pulse }}</strong>
+                <small class="v-status normal">● Normal (60-100)</small>
+              </div>
+
+              <div class="vital-metric-card">
+                <span class="v-icon">🩸</span>
+                <span class="v-label">Blood Pressure</span>
+                <strong class="v-val">{{ patientVitals().bp }}</strong>
+                <small class="v-status normal">● Optimal</small>
+              </div>
+
+              <div class="vital-metric-card">
+                <span class="v-icon">🫁</span>
+                <span class="v-label">Blood Oxygen (SpO2)</span>
+                <strong class="v-val">{{ patientVitals().spo2 }}</strong>
+                <small class="v-status normal">● Healthy (≥95%)</small>
+              </div>
+
+              <div class="vital-metric-card">
+                <span class="v-icon">🌡️</span>
+                <span class="v-label">Temperature</span>
+                <strong class="v-val">{{ patientVitals().temp }}</strong>
+                <small class="v-status normal">● Normal Oral</small>
+              </div>
+
+              <div class="vital-metric-card">
+                <span class="v-icon">⚖️</span>
+                <span class="v-label">Height & Weight</span>
+                <strong class="v-val">{{ patientHeight() }} cm / {{ patientWeight() }} kg</strong>
+                <small class="v-status normal">● BMI: {{ patientBmi() }} ({{ patientBmiCategory().label }})</small>
+              </div>
+
+              <div class="vital-metric-card">
+                <span class="v-icon">🚑</span>
+                <span class="v-label">Emergency Contact</span>
+                <strong class="v-val">{{ patientEmergencyContactPhone() }}</strong>
+                <small class="v-status normal">{{ patientEmergencyContactName() }} ({{ patientEmergencyContactRelation() }})</small>
+              </div>
+            </div>
+
+            <div class="clinical-note-box">
+              <h5>Chief Complaint</h5>
+              <p>Mild seasonal fever with intermittent headache, sore throat, and fatigue since 24 hours.</p>
+            </div>
+
+            <div class="clinical-note-box">
+              <h5>Known Allergies</h5>
+              <p>{{ patientAllergies() || 'No known allergies reported' }}</p>
+            </div>
+
+            <div class="clinical-note-box">
+              <h5>Chronic Conditions & Past History</h5>
+              <p>{{ patientChronicConditions() || 'No chronic conditions reported' }}</p>
+            </div>
+
+            <div class="clinical-note-box">
+              <h5>Current Daily Medications</h5>
+              <p>{{ patientCurrentMedications() || 'None reported' }}</p>
+            </div>
+          </div>
+        </aside>
+      }
+
+      <!-- 3. Live Prescription Drawer -->
+      @if (activeDrawer() === 'prescription') {
+        <aside class="side-drawer rx-drawer" aria-label="Prescription Preview">
+          <div class="drawer-header">
+            <div class="drawer-title-group">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#10B981" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+              </svg>
+              <h4>Live Clinical Prescription (Rx)</h4>
+            </div>
+            <button class="drawer-close" type="button" (click)="closeDrawer()">✕</button>
+          </div>
+
+          <div class="drawer-body rx-body">
+            <div class="rx-doctor-sign-card">
+              <strong>{{ doctorName() }}</strong>
+              <small>{{ doctorSpecialty() }} • {{ doctorClinic() }}</small>
+              <span class="rx-badge-signed">✓ Digitally Signed & Authorized</span>
+            </div>
+
+            <div class="rx-diagnosis-block">
+              <small>Provisional Diagnosis</small>
+              <strong>{{ diagnosis() }}</strong>
+            </div>
+
+            <div class="rx-medicines-list">
+              <h5>Prescribed Medications:</h5>
+              @for (med of prescribedMedicines(); track med.name) {
+                <div class="rx-medicine-item">
+                  <div class="rx-med-head">
+                    <span class="rx-pill-icon">💊</span>
+                    <strong>{{ med.name }}</strong>
+                    <span class="rx-dur">{{ med.duration }}</span>
+                  </div>
+                  <div class="rx-med-meta">
+                    <span>Frequency: {{ med.frequency }}</span>
+                    <small>Instructions: {{ med.instructions }}</small>
+                  </div>
+                </div>
+              }
+            </div>
+
+            <div class="rx-advice-block">
+              <h5>Doctor Advice & Regimen:</h5>
+              <p>{{ clinicalAdvice() }}</p>
+            </div>
+          </div>
+        </aside>
+      }
+
+    </main>
+
+    <!-- Bottom Controls Floating Dock -->
+    <nav class="call-control-dock" role="toolbar" aria-label="Call controls">
+      
+      <!-- Microphone Mute Toggle -->
+      <button 
+        type="button" 
+        class="dock-btn" 
+        [class.btn-muted]="!isMicOn()" 
+        (click)="toggleMic()"
+        [title]="isMicOn() ? 'Mute Microphone' : 'Unmute Microphone'">
+        @if (isMicOn()) {
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+            <line x1="12" y1="19" x2="12" y2="23"/>
+            <line x1="8" y1="23" x2="16" y2="23"/>
+          </svg>
+        } @else {
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#EF4444" stroke-width="2">
+            <line x1="1" y1="1" x2="23" y2="23"/>
+            <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/>
+            <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/>
+            <line x1="12" y1="19" x2="12" y2="23"/>
+            <line x1="8" y1="23" x2="16" y2="23"/>
+          </svg>
+        }
+        <span class="dock-label">{{ isMicOn() ? 'Mic On' : 'Muted' }}</span>
+      </button>
+
+      <!-- Camera Video Toggle -->
+      <button 
+        type="button" 
+        class="dock-btn" 
+        [class.btn-muted]="!isCameraOn()" 
+        (click)="toggleCamera()"
+        [title]="isCameraOn() ? 'Turn Off Video' : 'Turn On Video'">
+        @if (isCameraOn()) {
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="23 7 16 12 23 17 23 7"/>
+            <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+          </svg>
+        } @else {
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#EF4444" stroke-width="2">
+            <path d="M16 16v1a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2m5.66 0H14a2 2 0 0 1 2 2v3.34l1 1L23 7v10"/>
+            <line x1="1" y1="1" x2="23" y2="23"/>
+          </svg>
+        }
+        <span class="dock-label">{{ isCameraOn() ? 'Video On' : 'Video Off' }}</span>
+      </button>
+
+      <!-- Screen Share Toggle -->
+      <button 
+        type="button" 
+        class="dock-btn" 
+        [class.active]="isScreenSharing()" 
+        (click)="toggleScreenShare()"
+        title="Share your screen / lab report">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+          <line x1="8" y1="21" x2="16" y2="21"/>
+          <line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+        <span class="dock-label">{{ isScreenSharing() ? 'Sharing' : 'Share Screen' }}</span>
+      </button>
+
+      <div class="dock-separator"></div>
+
+      <!-- In-Call Chat Drawer Toggle -->
+      <button 
+        type="button" 
+        class="dock-btn" 
+        [class.active]="activeDrawer() === 'chat'" 
+        (click)="toggleDrawer('chat')"
+        title="Open Consultation Chat">
+        <div class="badge-wrapper">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+          @if (unreadChatCount() > 0) {
+            <span class="dock-badge">{{ unreadChatCount() }}</span>
+          }
+        </div>
+        <span class="dock-label">Chat</span>
+      </button>
+
+      <!-- Vitals & Records Drawer Toggle -->
+      <button 
+        type="button" 
+        class="dock-btn" 
+        [class.active]="activeDrawer() === 'vitals'" 
+        (click)="toggleDrawer('vitals')"
+        title="Patient Vitals & Health Snapshot">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+        </svg>
+        <span class="dock-label">Vitals</span>
+      </button>
+
+      <!-- Live Prescription Drawer Toggle -->
+      <button 
+        type="button" 
+        class="dock-btn" 
+        [class.active]="activeDrawer() === 'prescription'" 
+        (click)="toggleDrawer('prescription')"
+        title="View Live Prescription">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+        </svg>
+        <span class="dock-label">Prescription</span>
+      </button>
+
+      <div class="dock-separator"></div>
+
+      <!-- End Call Button -->
+      <button 
+        type="button" 
+        class="dock-btn btn-end-call" 
+        (click)="promptEndCall()"
+        title="End Consultation">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#FFFFFF" stroke-width="2.5">
+          <path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-6-6 19.8 19.8 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"/>
+          <line x1="23" y1="1" x2="1" y2="23"/>
+        </svg>
+        <span class="dock-label">End Call</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- End Call Confirmation Modal -->
+  @if (isEndCallModalOpen()) {
+    <div class="modal-backdrop" (click)="cancelEndCall()">
+      <div class="modal-dialog" (click)="$event.stopPropagation()">
+        <div class="modal-icon-badge">
+          📞
+        </div>
+        <h3>End Consultation Session?</h3>
+        <p>
+          Ending the call will complete your session with <strong>{{ doctorName() }}</strong>. 
+          Your official digital prescription and clinical summary will be generated immediately.
+        </p>
+
+        <div class="modal-btn-row">
+          <button type="button" class="btn-cancel-modal" (click)="cancelEndCall()">
+            Keep Talking
+          </button>
+          <button type="button" class="btn-confirm-end" (click)="confirmEndCall()">
+            End Call & View Prescription
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+  }
+
+  <!-- ================= POST-CONSULTATION PRESCRIPTION SUMMARY ================= -->
+  @if (callPhase() === 'ended') {
+  <div class="summary-stage-wrapper">
+    <div class="summary-top-card">
+      <div class="summary-badge-success">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#10B981" stroke-width="2.5">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+        <span>Consultation Completed Successfully</span>
+      </div>
+
+      <h2>Official TeleHealth Medical Summary</h2>
+      <p>Thank you for consulting with Healio TeleHealth. Below is your verified clinical consultation summary and digital prescription.</p>
+
+      <!-- Dynamic Patient Profile Snapshot Chips -->
+      <div class="summary-patient-profile-strip">
+        <div class="summary-prof-chip">
+          <span class="prof-chip-icon">👤</span>
+          <span class="prof-chip-label">Patient:</span>
+          <strong>{{ patientName() }}</strong>
+          <span class="prof-pid">({{ patientId() }})</span>
+        </div>
+        <div class="summary-prof-chip">
+          <span class="prof-chip-icon">🎂</span>
+          <span class="prof-chip-label">Age & Gender:</span>
+          <strong>{{ patientAge() }} Yrs • {{ patientGender() }}</strong>
+        </div>
+        <div class="summary-prof-chip blood-chip">
+          <span class="prof-chip-icon">🩸</span>
+          <span class="prof-chip-label">Blood Group:</span>
+          <strong>{{ patientBloodGroup() }}</strong>
+        </div>
+        <div class="summary-prof-chip">
+          <span class="prof-chip-icon">⚖️</span>
+          <span class="prof-chip-label">Metrics:</span>
+          <strong>{{ patientHeight() }} cm • {{ patientWeight() }} kg</strong>
+          <small class="prof-bmi-tag" [style.color]="patientBmiCategory().color">(BMI: {{ patientBmi() }})</small>
+        </div>
+        @if (patientAllergies() && patientAllergies() !== 'None') {
+          <div class="summary-prof-chip allergy-chip">
+            <span class="prof-chip-icon">⚠️</span>
+            <span class="prof-chip-label">Allergies:</span>
+            <strong>{{ patientAllergies() }}</strong>
+          </div>
+        }
+        @if (patientEmergencyContactPhone()) {
+          <div class="summary-prof-chip">
+            <span class="prof-chip-icon">🚑</span>
+            <span class="prof-chip-label">Emergency:</span>
+            <strong>{{ patientEmergencyContactName() }} ({{ patientEmergencyContactPhone() }})</strong>
+          </div>
+        }
+      </div>
+
+      <div class="summary-actions-strip">
+        <button class="btn-summary-action primary" (click)="printPrescription()">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 6 2 18 2 18 9"/>
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+            <rect x="6" y="14" width="12" height="8"/>
+          </svg>
+          <span>Print / Download Prescription PDF</span>
+        </button>
+
+        <button class="btn-summary-action medicine" (click)="orderMedicines()">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+            <line x1="3" y1="6" x2="21" y2="6"/>
+            <path d="M16 10a4 4 0 0 1-8 0"/>
+          </svg>
+          <span>Order Prescribed Medicines (20% Off)</span>
+        </button>
+
+        <button class="btn-summary-action secondary" (click)="returnHome()">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+          <span>Return to Dashboard</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Official Verified Printable Prescription Sheet -->
+    <article class="prescription-sheet printable-document" id="printable-prescription">
+      <!-- Clinic Header -->
+      <header class="rx-header-row">
+        <div class="rx-brand-block">
+          <div class="rx-logo-title">
+            <span class="rx-logo-text">healio</span>
+            <span class="rx-logo-sub">TeleHealth & Diagnostics</span>
+          </div>
+          <address class="rx-clinic-addr">
+            Plot 42, 100 Feet Road, HAL 2nd Stage, Indiranagar, Bangalore - 560038<br />
+            Ph: +91 80 4912 8800 • Email: telehealth@healio.health
+          </address>
+        </div>
+
+        <div class="rx-doctor-header-block">
+          <h3>{{ doctorName() }}</h3>
+          <span class="rx-qual">MBBS, MD (General Medicine)</span>
+          <span class="rx-spec-tag">{{ doctorSpecialty() }}</span>
+          <small>Reg No: {{ doctorRegNo() }}</small>
+        </div>
+      </header>
+
+      <hr class="rx-divider" />
+
+      <!-- Patient & Visit Meta Strip -->
+      <section class="rx-patient-meta-grid">
+        <div class="meta-item">
+          <label>Patient Name:</label>
+          <strong>{{ patientName() }}</strong>
+        </div>
+        <div class="meta-item">
+          <label>Patient ID:</label>
+          <strong>{{ patientId() }}</strong>
+        </div>
+        <div class="meta-item">
+          <label>Age / Gender:</label>
+          <strong>{{ patientAge() }} Yrs / {{ patientGender() }}</strong>
+        </div>
+        <div class="meta-item">
+          <label>Blood Group:</label>
+          <strong class="blood-meta-val">🩸 {{ patientBloodGroup() }}</strong>
+        </div>
+        <div class="meta-item">
+          <label>Body Metrics (BMI):</label>
+          <strong>{{ patientHeight() }} cm • {{ patientWeight() }} kg (BMI: {{ patientBmi() }})</strong>
+        </div>
+        <div class="meta-item">
+          <label>Consultation Date:</label>
+          <strong>Today (Session: {{ formattedDuration }})</strong>
+        </div>
+        <div class="meta-item">
+          <label>Blood Pressure:</label>
+          <strong>{{ patientVitals().bp }}</strong>
+        </div>
+        <div class="meta-item">
+          <label>Heart Rate & SpO2:</label>
+          <strong>{{ patientVitals().pulse }} • {{ patientVitals().spo2 }}</strong>
+        </div>
+        <div class="meta-item">
+          <label>Known Allergies:</label>
+          <strong [class.text-danger]="patientAllergies() && patientAllergies() !== 'None' && patientAllergies() !== 'None reported'">
+            {{ patientAllergies() || 'No Known Drug Allergies (NKDA)' }}
+          </strong>
+        </div>
+        <div class="meta-item">
+          <label>Medical History / Chronic:</label>
+          <strong>{{ patientChronicConditions() || 'None reported' }}</strong>
+        </div>
+        <div class="meta-item">
+          <label>Emergency Contact:</label>
+          <strong>{{ patientEmergencyContactName() }} ({{ patientEmergencyContactPhone() }})</strong>
+        </div>
+        <div class="meta-item">
+          <label>Patient Contact:</label>
+          <strong>{{ patientPhone() }} • {{ patientEmail() }}</strong>
+        </div>
+      </section>
+
+      <hr class="rx-divider" />
+
+      <!-- Clinical Findings -->
+      <section class="rx-section-block">
+        <h4 class="rx-heading">1. Clinical Findings & Provisional Diagnosis</h4>
+        <div class="rx-diagnosis-box">
+          <strong>{{ diagnosis() }}</strong>
+          <p>Presented with low-grade pyrexia, mild pharyngeal injection, and seasonal fatigue. Chest clear on auscultation. Vitals stable.</p>
+        </div>
+      </section>
+
+      <!-- Prescribed Medicines Rx -->
+      <section class="rx-section-block">
+        <div class="rx-symbol-heading">
+          <span class="rx-symbol">℞</span>
+          <h4 class="rx-heading">Prescribed Medications</h4>
+        </div>
+
+        <table class="rx-meds-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Medication & Strength</th>
+              <th>Dosage Frequency</th>
+              <th>Duration</th>
+              <th>Clinical Instructions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (med of prescribedMedicines(); track med.name; let idx = $index) {
+              <tr>
+                <td>{{ idx + 1 }}</td>
+                <td>
+                  <strong>{{ med.name }}</strong>
+                  <small>{{ med.dosage }}</small>
+                </td>
+                <td><span class="freq-chip">{{ med.frequency }}</span></td>
+                <td>{{ med.duration }}</td>
+                <td>{{ med.instructions }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </section>
+
+      <!-- Dietary & Clinical Advice -->
+      <section class="rx-section-block">
+        <h4 class="rx-heading">2. Dietary & Recovery Advice</h4>
+        <div class="rx-advice-card">
+          <p>{{ clinicalAdvice() }}</p>
+          <ul>
+            <li>Avoid chilled drinks, aerated beverages, and deep-fried spicy foods.</li>
+            <li>Take adequate sleep and maintain room humidity.</li>
+            <li>Review immediately if temperature spikes >102°F or breathlessness develops.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Footer & Signature -->
+      <footer class="rx-footer-row">
+        <div class="rx-qr-security">
+          <div class="qr-placeholder">
+            <span>[Verified Digital Rx]</span>
+          </div>
+          <small>Document ID: #HL-RX-{{ roomId() }}<br />Authenticated via Healio TeleHealth PKI</small>
+        </div>
+
+        <div class="rx-signature-block">
+          <div class="digital-sign-mark">
+            <span class="sign-cursive">{{ doctorName() }}</span>
+            <span class="sign-seal">✓ Digitally Signed</span>
+          </div>
+          <strong>{{ doctorName() }}</strong>
+          <small>{{ doctorSpecialty() }} • {{ doctorClinic() }}</small>
+        </div>
+      </footer>
+    </article>
+  </div>
+  }
+
+</div>

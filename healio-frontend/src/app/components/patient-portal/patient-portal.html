@@ -1,0 +1,390 @@
+<div class="portal-wrapper">
+  <!-- Minimalist Header -->
+  <header class="portal-header" role="banner">
+    <div class="brand">
+      <img src="/logo.png" alt="Healio logo" class="logo" />
+      <h2 class="portal-title">Patient Portal</h2>
+    </div>
+
+    <div class="header-action-area">
+      <span class="portal-role-pill">Patient Workspace</span>
+      <button type="button" class="logout-btn" (click)="logout()" aria-label="Sign out of patient account and return to splash screen">Sign Out</button>
+    </div>
+  </header>
+
+  <!-- Clean, Compact Patient Context Banner -->
+  <section class="patient-identity-banner" aria-label="Verified Patient Clinical Profile">
+    <div class="identity-profile-left">
+      <div class="avatar-badge" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+      </div>
+      <div class="identity-details">
+        <div class="identity-name-line">
+          <h3 class="patient-display-name">
+            {{ currentPatient?.full_name || currentUser?.name || 'Active Patient' }}
+          </h3>
+          <span class="clinical-pid-chip">PID: {{ patientId || 'P-001' }}</span>
+          <span class="info-badge blood-badge">Blood: {{ currentPatient?.profile?.blood_group || currentUser?.blood_group || 'B+' }}</span>
+          <span class="info-badge allergy-badge">Allergies: {{ currentPatient?.profile?.allergies || currentUser?.allergies || 'None reported' }}</span>
+        </div>
+        <p class="patient-contact-sub">
+          <span *ngIf="currentPatient?.contact_email || currentUser?.email">
+            {{ currentPatient?.contact_email || currentUser?.email }}
+          </span>
+          <span class="sub-sep" *ngIf="currentPatient?.contact_phone || currentUser?.phone">•</span>
+          <span *ngIf="currentPatient?.contact_phone || currentUser?.phone">{{ currentPatient?.contact_phone || currentUser?.phone }}</span>
+          <span class="sub-sep" *ngIf="currentPatient?.profile?.emergency_contact_phone || currentUser?.emergency_contact_phone">•</span>
+          <span *ngIf="currentPatient?.profile?.emergency_contact_phone || currentUser?.emergency_contact_phone">
+            Emergency: {{ currentPatient?.profile?.emergency_contact_name || currentUser?.emergency_contact_name || 'Emergency Contact' }} ({{ currentPatient?.profile?.emergency_contact_phone || currentUser?.emergency_contact_phone }})
+          </span>
+        </p>
+      </div>
+    </div>
+
+    <div class="identity-status-right">
+      <span class="status-pill registered">
+        <span class="status-indicator-dot" aria-hidden="true"></span>
+        Verified Clinical Profile
+      </span>
+    </div>
+  </section>
+
+  <!-- Portal Navigation Tabs -->
+  <nav class="portal-nav-tabs" role="tablist" aria-label="Patient workspace views">
+    <button 
+      type="button" 
+      role="tab" 
+      class="pnav-tab" 
+      [class.active]="activePortalTab() === 'all'" 
+      (click)="activePortalTab.set('all')">
+      <span>Overview</span>
+    </button>
+    <button 
+      type="button" 
+      role="tab" 
+      class="pnav-tab" 
+      [class.active]="activePortalTab() === 'appointments'" 
+      (click)="activePortalTab.set('appointments')">
+      <span>📅 Appointments ({{ userAppointments().length }})</span>
+    </button>
+    <button 
+      type="button" 
+      role="tab" 
+      class="pnav-tab" 
+      [class.active]="activePortalTab() === 'records'" 
+      (click)="activePortalTab.set('records')">
+      <span>📋 Clinical Notes</span>
+    </button>
+    <button 
+      type="button" 
+      role="tab" 
+      class="pnav-tab" 
+      [class.active]="activePortalTab() === 'prescriptions'" 
+      (click)="activePortalTab.set('prescriptions')">
+      <span>💊 Prescriptions ({{ fullPrescriptions().length }})</span>
+    </button>
+  </nav>
+
+  <main class="portal-content">
+    <!-- PRIMARY HERO CARD: PRACTO-STYLE BOOKED CONSULTATIONS -->
+    <section class="card slot-card hero-card" *ngIf="activePortalTab() === 'all' || activePortalTab() === 'appointments'" aria-labelledby="consultations-heading">
+      <div class="card-title-row">
+        <div>
+          <h3 id="consultations-heading">My Scheduled Consultations</h3>
+          <p class="card-subtext">Manage upcoming in-person clinic visits and direct video consultations</p>
+        </div>
+        <div class="header-action-group">
+          <span class="live-pill">Live Synced</span>
+          <a routerLink="/home" class="btn-new-booking-link" aria-label="Book new appointment on home screen">+ Book New Consultation</a>
+        </div>
+      </div>
+
+      <!-- Practo-Style Consultations List -->
+      <div class="practo-appointments-list" *ngIf="userAppointments().length > 0; else emptyAppointmentsTemplate">
+        <div *ngFor="let appt of userAppointments()" class="practo-appointment-card" [class.cancelled-card]="appt.status === 'Cancelled'">
+          <div class="appt-card-header">
+            <div class="appt-type-indicator">
+              <span *ngIf="appt.consultationType === 'video'" class="consult-type-pill video-pill">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 10l5-5v14l-5-5z"/><rect x="2" y="5" width="13" height="14" rx="2"/></svg>
+                Video Consultation
+              </span>
+              <span *ngIf="appt.consultationType === 'in-person'" class="consult-type-pill inperson-pill">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                In-Person Visit
+              </span>
+              <span class="appt-id-pill" *ngIf="appt.id">Ref: {{ appt.id }}</span>
+            </div>
+            <div class="appt-status-wrapper">
+              <span class="appt-status-pill" [class]="'status-' + appt.status.toLowerCase()">
+                {{ appt.status }}
+              </span>
+            </div>
+          </div>
+
+          <div class="appt-card-body">
+            <div class="doctor-profile-section">
+              <img 
+                [src]="appt.doctorAvatar || 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=300&auto=format&fit=crop&q=80'" 
+                (error)="onDocImgError($event)"
+                [alt]="appt.doctorName" 
+                class="doctor-thumb" 
+              />
+              <div class="doctor-details">
+                <h4 class="doctor-name">{{ appt.doctorName }}</h4>
+                <p class="doctor-spec">{{ appt.doctorSpecialization }}</p>
+                <p class="clinic-location">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                  <span>{{ appt.doctorClinic || 'Healio Super-Specialty Medical Center' }}</span>
+                </p>
+              </div>
+            </div>
+
+            <div class="schedule-chips-block">
+              <div class="schedule-chip date-chip">
+                <span class="chip-label">Date</span>
+                <strong class="chip-value">📅 {{ appt.date }}</strong>
+              </div>
+              <div class="schedule-chip time-chip">
+                <span class="chip-label">Time Slot</span>
+                <strong class="chip-value">⏰ {{ appt.timeSlot }}</strong>
+              </div>
+              <div class="schedule-chip fee-chip" *ngIf="appt.fee">
+                <span class="chip-label">Consultation Fee</span>
+                <strong class="chip-value">₹{{ appt.fee }}</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="appt-card-footer">
+            <div class="footer-patient-tag">
+              Patient: <strong>{{ appt.patientName }}</strong>
+            </div>
+
+            <div class="appt-actions-row">
+              <!-- Contextual Action CTA -->
+              <button 
+                *ngIf="appt.consultationType === 'video' && appt.status !== 'Cancelled'" 
+                type="button"
+                (click)="joinVideoCall(appt)" 
+                class="btn-action-primary btn-join-call"
+                aria-label="Join video consultation">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 10l5-5v14l-5-5z"/><rect x="2" y="5" width="13" height="14" rx="2"/></svg>
+                <span>Join Video Call</span>
+              </button>
+
+              <button 
+                *ngIf="appt.consultationType === 'in-person' && appt.status !== 'Cancelled'" 
+                type="button" 
+                (click)="openClinicDetails(appt)" 
+                class="btn-action-primary btn-view-clinic"
+                aria-label="Clinic Directions and View Details">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                <span>Clinic Directions / View Details</span>
+              </button>
+
+              <button 
+                *ngIf="appt.status !== 'Cancelled' && appt.status !== 'Completed'" 
+                type="button" 
+                (click)="cancelConsultation(appt)" 
+                class="btn-action-secondary btn-cancel-appt"
+                [attr.aria-label]="'Cancel consultation with ' + appt.doctorName">
+                Cancel
+              </button>
+
+              <span *ngIf="appt.status === 'Cancelled'" class="cancelled-notice">
+                Consultation Cancelled
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty State Illustration / Banner -->
+      <ng-template #emptyAppointmentsTemplate>
+        <div class="empty-appointments-banner">
+          <div class="empty-icon-circle">
+            <svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="#0E9F6E" stroke-width="1.8">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+              <line x1="16" y1="2" x2="16" y2="6"/>
+              <line x1="8" y1="2" x2="8" y2="6"/>
+              <line x1="3" y1="10" x2="21" y2="10"/>
+              <path d="M9 16l2 2 4-4"/>
+            </svg>
+          </div>
+          <h4>No Scheduled Consultations</h4>
+          <p>You don't have any upcoming doctor appointments scheduled yet. Book an in-person clinic visit or instant video consultation with top specialists.</p>
+          <div class="empty-cta-group">
+            <a routerLink="/home" class="btn-primary-portal">+ Book New Consultation</a>
+            <a routerLink="/home" class="btn-secondary-portal">Browse Available Doctors</a>
+          </div>
+        </div>
+      </ng-template>
+    </section>
+
+    <!-- DEDICATED PRESCRIPTION CARDS (SYNCHRONIZED REACTIVELY VIA PRESCRIPTION SERVICE) -->
+    <section class="card prescriptions-card" *ngIf="activePortalTab() === 'all' || activePortalTab() === 'prescriptions'" aria-labelledby="prescriptions-heading">
+      <div class="card-title-row">
+        <div>
+          <h3 id="prescriptions-heading">Active Clinical Prescriptions</h3>
+          <p class="card-subtext">Digitally verified and synchronized in real-time from your consulting physician</p>
+        </div>
+        <span class="live-pill">Live Rx Stream</span>
+      </div>
+
+      <div *ngIf="fullPrescriptions().length === 0" class="empty-prescriptions-box">
+        <p>No prescriptions have been issued for patient {{ patientId }} yet.</p>
+      </div>
+
+      <div class="prescription-cards-list">
+        @for (rx of fullPrescriptions(); track rx.id) {
+          <div class="rich-prescription-card">
+            <div class="rx-card-top">
+              <div class="rx-doctor-info">
+                <div class="rx-doctor-avatar">👨‍⚕️</div>
+                <div>
+                  <h4 class="rx-doc-name">{{ rx.doctorName }}</h4>
+                  <p class="rx-doc-clinic">{{ rx.doctorSpecialty }} • {{ rx.clinicName }}</p>
+                </div>
+              </div>
+              <div class="rx-meta-pill-group">
+                <span class="rx-id-badge">{{ rx.id }}</span>
+                <span class="rx-date-badge">📅 {{ rx.dateIssued }}</span>
+              </div>
+            </div>
+
+            <div class="rx-diagnosis-row">
+              <span class="diagnosis-label">Diagnosis:</span>
+              <strong class="diagnosis-val">{{ rx.diagnosis }}</strong>
+            </div>
+
+            <div class="rx-medicines-table-wrapper">
+              <table class="rx-table">
+                <thead>
+                  <tr>
+                    <th>Medication Name</th>
+                    <th>Dosage</th>
+                    <th>Frequency</th>
+                    <th>Duration</th>
+                    <th>Instructions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (m of rx.medicines; track m.name) {
+                    <tr>
+                      <td class="med-name-cell">💊 {{ m.name }}</td>
+                      <td><span class="dosage-badge">{{ m.dosage }}</span></td>
+                      <td class="freq-cell">{{ m.frequency }}</td>
+                      <td class="duration-cell">{{ m.duration }}</td>
+                      <td class="instructions-cell">{{ m.instructions }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            @if (rx.advice) {
+              <div class="rx-advice-callout">
+                <strong>Doctor's Advice:</strong>
+                <p>{{ rx.advice }}</p>
+              </div>
+            }
+
+            <div class="rx-card-footer">
+              <div class="rx-followup">
+                @if (rx.followUpDate) {
+                  <span>🗓️ Next Follow-Up: <strong>{{ rx.followUpDate }}</strong></span>
+                }
+              </div>
+              <button type="button" class="btn-download-rx" (click)="downloadPrescription(rx)" [attr.aria-label]="'Download prescription slip for ' + rx.id">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                <span>Download Prescription (PDF)</span>
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    </section>
+
+    <!-- SECONDARY CARD: CONSULTATION RECORDS & NOTES -->
+    <section class="card history-card" *ngIf="activePortalTab() === 'all' || activePortalTab() === 'records'" aria-labelledby="clinical-records-heading">
+      <div class="card-title-row">
+        <div>
+          <h3 id="clinical-records-heading">Consultation History & Clinical Notes</h3>
+          <p class="card-subtext">Clinical summaries from in-person and video consultations</p>
+        </div>
+        <button class="btn-print" (click)="printPrescriptionSlip()" aria-label="Print consultation records">Print Records</button>
+      </div>
+
+      <div class="consultation-stack">
+        <div *ngFor="let c of patientConsultations" class="consult-item">
+          <div class="consult-meta">{{ c.consultation_date | date:'mediumDate' }} | Doctor ID: {{ c.doctor_id }}</div>
+          <p><strong>Chief Complaint:</strong> {{ c.chief_complaint }}</p>
+          <p><strong>Diagnosis:</strong> {{ c.diagnosis }}</p>
+          <p *ngIf="c.clinical_notes"><strong>Clinical Notes:</strong> <em>{{ c.clinical_notes }}</em></p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- CLINIC DIRECTIONS & DETAILS MODAL -->
+  <div *ngIf="selectedAppointmentDetails() as appt" class="modal-backdrop" (click)="closeClinicDetails()" role="dialog" aria-modal="true">
+    <div class="modal-sheet" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-header-text">
+          <h3>In-Person Clinic Visit Details</h3>
+          <p>Booking Reference: <strong>{{ appt.id }}</strong></p>
+        </div>
+        <button type="button" class="btn-close-modal" (click)="closeClinicDetails()" aria-label="Close modal">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="modal-doc-summary">
+          <img 
+            [src]="appt.doctorAvatar || 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=300&auto=format&fit=crop&q=80'" 
+            (error)="onDocImgError($event)" 
+            [alt]="appt.doctorName" 
+            class="modal-doc-thumb" 
+          />
+          <div>
+            <h4>{{ appt.doctorName }}</h4>
+            <p class="modal-doc-spec">{{ appt.doctorSpecialization }}</p>
+            <span class="consult-type-pill inperson-pill">🏥 In-Person Consultation</span>
+          </div>
+        </div>
+
+        <div class="clinic-details-card">
+          <h5>Clinic & Facility Location</h5>
+          <p class="clinic-title">🏥 {{ appt.doctorClinic || 'Healio Super-Specialty Medical Center' }}</p>
+          <p class="clinic-address">📍 Building 4B, Health City Avenue, Medical District, Suite 302</p>
+          <p class="clinic-timing">🕒 Reporting Time: 15 minutes before <strong>{{ appt.timeSlot }}</strong></p>
+          <div class="map-link-container">
+            <a [href]="'https://www.google.com/maps/search/?api=1&query=' + (appt.doctorClinic || 'Healio Medical Center')" target="_blank" rel="noopener noreferrer" class="btn-map-directions">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+              <span>Open in Google Maps</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="visit-instructions">
+          <h5>Patient Preparation Checklist</h5>
+          <ul>
+            <li>Carry a valid government photo ID and your Healio Patient ID (<strong>{{ patientId }}</strong>).</li>
+            <li>Bring physical copies or previous lab reports relevant to your consultation.</li>
+            <li>Free covered patient parking is available at Basement Level 1.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-modal-close" (click)="closeClinicDetails()">Close</button>
+      </div>
+    </div>
+  </div>
+</div>

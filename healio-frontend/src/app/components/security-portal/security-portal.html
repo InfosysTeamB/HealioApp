@@ -1,0 +1,81 @@
+<div class="portal-wrapper">
+  <header class="portal-header">
+    <div class="brand">
+      <img src="/logo.png" alt="MediTrack" class="logo" />
+      <div>
+        <h2 class="portal-title">Med-EHR Portal: Notifications, Security & APIs</h2>
+        <span class="sub-badge">Milestone 3</span>
+      </div>
+    </div>
+    <div class="header-nav">
+      <a routerLink="/patient" class="nav-link">Patient Portal</a>
+      <a routerLink="/doctor" class="nav-link">Doctor Portal</a>
+      <a routerLink="/home" class="logout-btn">Log Out</a>
+    </div>
+  </header>
+
+  <main class="dashboard-grid">
+    <!-- Notification Service Status -->
+    <section class="card notification-card">
+      <h3>Notification Service Status</h3>
+      <div class="status-indicator">
+        <span class="dot-active"></span>
+        <span class="status-text">
+          Alerts: <strong>{{ notificationStatus.status }}</strong>, last run {{ notificationStatus.last_run }}
+        </span>
+      </div>
+    </section>
+
+    <!-- REST API Explorer -->
+    <section class="card api-card">
+      <h3>REST API Explorer</h3>
+      <p class="section-desc">Available end-points are listed below:</p>
+      <div class="endpoint-list">
+        <div *ngFor="let ep of apiEndpoints" class="endpoint-item">
+          <span [class]="'method-tag ' + ep.method.toLowerCase()">{{ ep.method }}</span>
+          <span class="endpoint-path">{{ ep.path }}</span>
+          <span class="endpoint-desc">({{ ep.description }})</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Security Audit Log -->
+    <section class="card audit-card">
+      <div class="card-title-row">
+        <h3>Security Audit Log</h3>
+        <span class="security-flag">Security Status: Secure, Audit Logging Enabled</span>
+      </div>
+
+      <div class="search-bar-row">
+        <input 
+          type="text" 
+          [(ngModel)]="searchQuery" 
+          placeholder="Search logs by User ID, Keyword, or Timestamp..." 
+          class="log-search-input" />
+        <button class="btn-refresh" (click)="loadLogs()">Refresh Trails</button>
+      </div>
+
+      <div class="table-container">
+        <table class="audit-table">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>User</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let log of filteredAuditLogs">
+              <td class="time-col">{{ log.formatted_time }}</td>
+              <td class="user-col">{{ log.user_identifier }}</td>
+              <td class="action-col">{{ log.action }}</td>
+            </tr>
+            <tr *ngIf="filteredAuditLogs.length === 0">
+              <td colspan="3" class="empty-state" style="text-align: center;">No matching audit logs found.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</div>

@@ -1,0 +1,115 @@
+<div class="clinic-card" [class.is-booked]="bookingStatus() === 'booked'">
+  <!-- Card Header / Doctor Profile (Left Column on Desktop) -->
+  <div class="card-main">
+    <div class="avatar-wrap">
+      <img [src]="doctor.avatarUrl" [alt]="'Photo of ' + doctor.name" class="doc-avatar" (error)="onImgError($event)" />
+      <span class="verified-badge" title="Verified Specialist" aria-label="Verified Specialist">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+        </svg>
+      </span>
+    </div>
+
+    <div class="details-wrap">
+      <div class="top-row">
+        <h3 class="doc-name" (click)="onViewProfile()" [attr.aria-label]="'Doctor ' + doctor.name + ', ' + doctor.specialty" role="button" tabindex="0" (keydown.enter)="onViewProfile()">
+          {{ doctor.name }}
+        </h3>
+        <span class="fee-badge" aria-label="Consultation fee">₹{{ doctor.fee }}</span>
+      </div>
+
+      <p class="specialty-text">{{ doctor.specialty }} • {{ doctor.experienceYears }} yrs exp</p>
+
+      <div class="rating-row" [attr.aria-label]="doctor.rating + ' out of 5 stars from ' + doctor.reviewsCount + ' patient reviews'">
+        <span class="star-pill">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+          </svg>
+          {{ doctor.rating }}
+        </span>
+        <span class="review-count">({{ doctor.reviewsCount }} reviews)</span>
+      </div>
+
+      <!-- Physical Clinic Location & Distance -->
+      <div class="clinic-location">
+        <svg class="loc-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+          <circle cx="12" cy="10" r="3"/>
+        </svg>
+        <span class="clinic-info">
+          <strong>{{ doctor.clinicName }}</strong> • {{ doctor.clinicAddress }}
+        </span>
+        <span class="distance-pill">{{ doctor.distanceKm }} km away</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slots / Availability Section (Right Column Top on Desktop) -->
+  <div class="slots-container">
+    <div class="slots-header">
+      <div class="avail-indicator-wrap">
+        <span class="avail-indicator" aria-hidden="true"></span>
+        <span class="avail-title">Next Available: <strong>{{ doctor.nextAvailableSlot }}</strong></span>
+      </div>
+      <span class="slots-count-badge" [class.low-slots]="doctor.availableSlots.length <= 2" aria-live="polite">
+        {{ doctor.availableSlots.length }} slots left
+      </span>
+    </div>
+
+    @if (bookingStatus() === 'booked') {
+      <div class="booked-lock-banner" role="status">
+        <svg class="lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          <path d="M9 12l2 2 4-4"/>
+        </svg>
+        <div class="lock-text">
+          <strong>Spot Reserved & Locked</strong>
+          <span>{{ bookedSlot() }} • Zero wait time</span>
+        </div>
+      </div>
+    } @else {
+      <div class="slot-chips" role="group" aria-label="Available appointment time slots">
+        @for (slot of doctor.availableSlots; track slot) {
+          <button 
+            type="button"
+            class="slot-btn" 
+            [class.active]="selectedSlot() === slot"
+            [attr.aria-pressed]="selectedSlot() === slot"
+            [attr.aria-label]="'Select ' + slot + ' time slot'"
+            (click)="chooseSlot(slot)">
+            {{ slot }}
+          </button>
+        }
+        @if (doctor.availableSlots.length === 0) {
+          <span class="no-slots-notice">No more slots today. Next booking tomorrow.</span>
+        }
+      </div>
+    }
+  </div>
+
+  <!-- Card Action Footer (Right Column Bottom on Desktop) -->
+  <div class="card-footer">
+    <button 
+      class="outline-btn" 
+      type="button" 
+      (click)="onViewProfile()"
+      [attr.aria-label]="'View physical clinic details and directions for ' + doctor.name">
+      Clinic Info
+    </button>
+    <button 
+      class="primary-book-btn" 
+      type="button"
+      [class.is-confirmed]="bookingStatus() === 'booked'"
+      [disabled]="bookingStatus() === 'booked' || doctor.availableSlots.length === 0"
+      [attr.aria-label]="bookingStatus() === 'booked' ? 'Appointment confirmed for ' + bookedSlot() : 'Book appointment with ' + doctor.name + ' for ' + (selectedSlot() || doctor.availableSlots[0] || 'visit')"
+      (click)="confirmBooking()">
+      @if (bookingStatus() === 'booked') {
+        <span>✓ Confirmed ({{ bookedSlot() }})</span>
+      } @else if (selectedSlot()) {
+        <span>Book for {{ selectedSlot() }}</span>
+      } @else {
+        <span>Book Slot ({{ doctor.availableSlots[0] || 'Visit' }})</span>
+      }
+    </button>
+  </div>
+</div>
