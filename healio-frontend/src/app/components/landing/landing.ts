@@ -190,7 +190,6 @@ export class LandingComponent implements OnInit {
     }
     return age > 0 ? age : 26;
   });
-
   // User location and active navigation state
   selectedCity = signal<string>('Bangalore');
   userCoordinates = signal<{ lat: number; lng: number }>({ lat: 12.9716, lng: 77.5946 });
@@ -532,7 +531,6 @@ export class LandingComponent implements OnInit {
     if (p.city) this.medFormCity.set(p.city);
     if (p.pincode) this.medFormPincode.set(p.pincode);
   }
-
   // --- Dynamic Recently Viewed Storage & Capping ---
   private loadRecentlyViewed() {
     const raw = localStorage.getItem('healio_recent_views');
@@ -1004,7 +1002,6 @@ export class LandingComponent implements OnInit {
       }
     });
   }
-
   private getStoredUser(): UserSession | null {
     if (typeof localStorage === 'undefined') return null;
     try {
@@ -1139,7 +1136,6 @@ export class LandingComponent implements OnInit {
     if (!p.date_of_birth) return 'Not Set';
     return `${this.patientAge()} yrs`;
   }
-
   logoutPatient() {
     this.closeProfileDrawer();
     this.authService.logout(true);

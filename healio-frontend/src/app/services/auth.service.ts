@@ -216,7 +216,6 @@ export class AuthService {
       this.currentUser.set({ ...current });
     }
   }
-
   updatePatientProfile(profileData: Partial<UserSession>): UserSession {
     const current = this.getUser() || {
       token: 'patient-token',

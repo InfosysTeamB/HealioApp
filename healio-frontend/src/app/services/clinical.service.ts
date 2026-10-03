@@ -293,7 +293,6 @@ export class ClinicalService {
     this.appointments.set(updated);
     this.saveAppointmentsToStorage(updated);
   }
-
   getLatestUpcoming(patientEmail?: string | null): AppointmentRecord | null {
     const list = this.appointments();
     if (!list || list.length === 0) return null;

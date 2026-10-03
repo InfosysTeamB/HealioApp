@@ -53,6 +53,7 @@
 - [Application Screenshots](#-application-screenshots)
 - [Tech Stack](#-tech-stack)
 - [Quick Evaluator Access & Demo Credentials](#-quick-evaluator-access--demo-credentials)
+- [Firebase Migration & Cloud Firestore Architecture](#-firebase-migration--cloud-firestore-architecture)
 - [Local Development](#-local-development)
   - [Prerequisites](#prerequisites)
   - [Backend Setup (Django & DRF)](#1-backend-setup-django--drf)
@@ -227,7 +228,10 @@ sequenceDiagram
 | **Frontend Framework** | **Angular (v17+)** | Modular Single Page Application (SPA), routing, and reactive UI logic |
 | **Language** | **TypeScript / Python 3.10+** | Strongly typed frontend modules and backend business logic |
 | **Backend Framework** | **Django & Django REST Framework** | RESTful API endpoints, ORM data modelling, serializers, and signals |
-| **Database** | **PostgreSQL** | Relational data persistence with strict integrity constraints (`unique_together`) |
+| **Cloud Database (NoSQL)** | **Cloud Firestore** | Real-time NoSQL document store with strict production security sandboxing |
+| **Authentication** | **Firebase Auth (v10+ SDK)** | Passwordless OTP email link authentication & sandboxed session tokens |
+| **Client Web SDK & Analytics** | **Firebase Modular v10+** | Tree-shakable web SDK with browser environment-aware Google Analytics |
+| **Relational Database** | **PostgreSQL** | Relational data persistence with strict integrity constraints (`unique_together`) |
 | **Database Adapter** | **dj-database-url / psycopg2** | Dynamic connection string parsing for cloud Render PostgreSQL instances |
 | **Production WSGI** | **Gunicorn** | Multi-worker WSGI HTTP server serving Django on Linux containers |
 | **Email Gateway** | **Brevo REST API (Port 443)** | Transactional email delivery over HTTPS for OTP passkey dispatch |
@@ -257,6 +261,157 @@ To evaluate the live application without needing to create mock profiles, use th
 - **Email:** *Any valid email address (e.g., your personal or institutional email)*
 - **Passkey / OTP:** Enter the 4-digit code delivered to your inbox via Brevo.
   > **Note for Evaluators:** If testing in an environment where your email provider delays incoming mail, check the network response payload in your browser DevTools (`POST /api/auth/send-otp/`) — the OTP is safely reflected in the JSON body (`response.data.otp`) for testing convenience.
+
+---
+
+## 🔥 Firebase Migration & Cloud Firestore Architecture
+
+Healio supports modern, serverless cloud persistence and passwordless authentication powered by the **Firebase v10+ Modular Web SDK** and **Cloud Firestore NoSQL**.
+
+### 1. Architectural Migration Overview
+The platform transitions clinical workloads from a traditional relational SQL database (PostgreSQL + Django ORM) to a real-time, document-oriented NoSQL architecture:
+- **Zero-Password OTP Authentication:** Native Firebase Authentication using sign-in email links (`sendSignInLinkToEmail` and `signInWithEmailLink`).
+- **Production Mode Sandboxing:** Strict Firestore security rules restricting reads and writes to authenticated user paths (`/users/{userId}`).
+- **Modular Tree-Shaking:** Built with Firebase v10+ modular functional imports (`doc`, `setDoc`, `collection`, `query`, `where`, `getDocs`) to ensure minimal JavaScript bundle footprints.
+- **Dual-State Resilience:** Operates alongside existing REST endpoints while enabling direct, low-latency Firestore queries for patient profiles, appointments, and prescriptions.
+
+### 2. Configuration & Initialization (`firebase.js`)
+The centralized Firebase client configuration is available at [`firebase.js`](file:///firebase.js) (and [`healio-frontend/src/firebase.js`](file:///healio-frontend/src/firebase.js)):
+
+```javascript
+import { initializeApp, getApps, getApp } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
+import { getAnalytics, isSupported } from 'firebase/analytics';
+
+// Auto-normalize authDomain if protocol was trimmed
+const rawAuthDomain = "://firebaseapp.com";
+const normalizedAuthDomain = rawAuthDomain.startsWith("://") 
+  ? `healio-309b3${rawAuthDomain.replace('://', '.')}` 
+  : rawAuthDomain;
+
+export const firebaseConfig = {
+  apiKey: "AIzaSyC-Sr3Nnz4_tMo-3ROqpwz-6ZxVnv2oiVs",
+  authDomain: normalizedAuthDomain, // "healio-309b3.firebaseapp.com"
+  projectId: "healio-309b3",
+  storageBucket: "healio-309b3.firebasestorage.app",
+  messagingSenderId: "425303107943",
+  appId: "1:425303107943:web:31a940ed553f913d82a7c2",
+  measurementId: "G-21N0J2K1Z9"
+};
+
+// Singleton App Instance
+export const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+
+// Modular Firestore & Auth Services
+export const db = getFirestore(app);
+export const auth = getAuth(app);
+
+// Safe Browser-Supported Analytics Initialization
+export let analytics = null;
+if (typeof window !== 'undefined') {
+  isSupported().then((supported) => {
+    if (supported) analytics = getAnalytics(app);
+  }).catch((err) => console.warn('[Firebase Analytics] Unsupported runtime:', err));
+}
+
+export default app;
+```
+
+### 3. Production Firestore Security Rules (`firestore.rules`)
+To enforce strict "Production Mode" isolation, data under `/users/{userId}` is strictly sandboxed to the authenticated user whose `request.auth.uid` matches the document key. All other collections are locked down by default:
+
+```javascript
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Identity validation helpers
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Global Default Deny: All unregistered collections are closed to reads and writes
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Sandboxed User Record Path: Authenticated users can ONLY read and write their own documents & subcollections
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+
+      // Recursive sandboxing for all nested clinical subcollections
+      // (e.g., /users/{userId}/prescriptions/{id}, /users/{userId}/appointments/{id})
+      match /{allSubcollections=**} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+  }
+}
+```
+
+### 4. OTP Passwordless Authentication Link Handlers
+The passwordless OTP email link workflow provides friction-free authentication without storing or transmitting passwords:
+
+```javascript
+import { 
+  sendSignInLinkToEmail, 
+  isSignInWithEmailLink, 
+  signInWithEmailLink 
+} from 'firebase/auth';
+import { auth } from './firebase';
+
+/**
+ * 1. Dispatches sign-in link and preserves local email context
+ */
+export async function sendOTPLink(email) {
+  const cleanEmail = email.trim().toLowerCase();
+  const actionCodeSettings = {
+    url: `${window.location.origin}/dashboard`,
+    handleCodeInApp: true
+  };
+
+  await sendSignInLinkToEmail(auth, cleanEmail, actionCodeSettings);
+  window.localStorage.setItem('emailForSignIn', cleanEmail);
+  return { success: true, email: cleanEmail };
+}
+
+/**
+ * 2. Completes authentication upon callback reload / router mount
+ */
+export async function completeOTPLogin() {
+  if (typeof window === 'undefined') return null;
+  const currentUrl = window.location.href;
+
+  if (!isSignInWithEmailLink(auth, currentUrl)) return null;
+
+  let email = window.localStorage.getItem('emailForSignIn');
+  if (!email) {
+    email = window.prompt('Please enter the email address used to request your sign-in link:');
+  }
+  if (!email) throw new Error('Email is required to complete authentication.');
+
+  const result = await signInWithEmailLink(auth, email.trim().toLowerCase(), currentUrl);
+  window.localStorage.removeItem('emailForSignIn');
+  return { success: true, user: result.user };
+}
+```
+
+### 5. Relational SQL vs. Modular Firestore Data Service Translation
+
+| Relational Action (PostgreSQL SQL) | Modular Firestore Operation (v10+ Web SDK) | Architectural Rationale & Implementation |
+| :--- | :--- | :--- |
+| **Insert / Register Patient**<br>`INSERT INTO patients (id, full_name, email, date_of_birth, blood_group) VALUES ('PT-88341', 'Alex Johnson', 'alex@healio.health', '1990-05-15', 'O+');` | `import { doc, setDoc, serverTimestamp } from 'firebase/firestore';`<br><br>`const patientRef = doc(db, 'users', userId);`<br>`await setDoc(patientRef, { full_name: 'Alex Johnson', email: 'alex@healio.health', date_of_birth: '1990-05-15', profile: { blood_group: 'O+' }, createdAt: serverTimestamp() }, { merge: true });` | Uses sandboxed path matching `userId`. `{ merge: true }` prevents overwriting sibling fields, replicating `ON CONFLICT DO UPDATE`. |
+| **Filter by Foreign Key & Status**<br>`SELECT * FROM appointments WHERE doctor_id = 'DOC-CARD-001' AND status = 'Confirmed' ORDER BY date ASC;` | `import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';`<br><br>`const q = query(collection(db, 'appointments'), where('doctor_id', '==', 'DOC-CARD-001'), where('status', '==', 'Confirmed'), orderBy('date', 'asc'));`<br>`const snapshot = await getDocs(q);`<br>`const appointments = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));` | Firestore uses composite indices for compound filters (`doctor_id` + `status` + `date`). Returned documents map directly to plain JavaScript objects. |
+| **Primary Key Lookup**<br>`SELECT * FROM patients WHERE id = 'PT-88341' LIMIT 1;` | `import { doc, getDoc } from 'firebase/firestore';`<br><br>`const snap = await getDoc(doc(db, 'users', userId));`<br>`if (snap.exists()) { const patient = snap.data(); }` | Point read with $O(1)$ efficiency. Does not require table scans or join overhead. |
+| **Update Patient Health Metrics**<br>`UPDATE patients SET blood_group = 'A+', updated_at = NOW() WHERE id = 'PT-88341';` | `import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';`<br><br>`await updateDoc(doc(db, 'users', userId), { 'profile.blood_group': 'A+', updatedAt: serverTimestamp() });` | Field path dot-notation (`profile.blood_group`) modifies nested fields without touching the rest of the profile object. |
+| **Delete Appointment Slot**<br>`DELETE FROM appointments WHERE id = 'APT-1002';` | `import { doc, deleteDoc } from 'firebase/firestore';`<br><br>`await deleteDoc(doc(db, 'appointments', 'APT-1002'));` | Directly purges document by ID. Subcollections must be recursively deleted if present. |
+| **Relational JOIN (Doctor Profile with Appointment)**<br>`SELECT a.*, d.name as doc_name, d.specialization FROM appointments a JOIN doctors d ON a.doctor_id = d.id;` | *Embedded Snapshot Pattern:*<br>`await addDoc(collection(db, 'appointments'), { patientId: userId, doctorId: 'DOC-01', doctorSnapshot: { name: 'Dr. Ramesh Rao', specialization: 'Cardiology' }, date: '2026-10-15', status: 'Confirmed' });` | NoSQL eliminates expensive join queries by snapshotting frequently read relational attributes directly onto the child document. |
 
 ---
 
@@ -356,13 +511,20 @@ Ensure all necessary environment variables are defined in your deployment dashbo
 | `BREVO_API_KEY` | Secret | **Yes** | Brevo v3 REST API key for HTTPS transactional email dispatch | `xkeysib-xxxxxxxxxxxxxxxxxxxxxxxx` |
 | `DEFAULT_FROM_EMAIL` | Email | No | Verified sender address on your Brevo account | `Healio Health <harshithanamala04@gmail.com>` |
 
-### Frontend Environment Variables (`src/environments/environment.ts`)
+### Frontend Environment Variables (`src/environments/environment.ts` & `firebase.js`)
 
 | Key | Type | Description | Production Value |
 | :--- | :--- | :--- | :--- |
 | `production` | Boolean | Toggles Angular production mode & tree-shaking | `true` |
 | `apiBaseUrl` | String | Points Angular HTTP services to the backend API | `https://healio-backend-ugg5.onrender.com` |
 | `googleClientId` | String | Google OAuth 2.0 Web Client ID (Optional) | `your-client-id.apps.googleusercontent.com` |
+| `firebaseConfig.apiKey` | String | Firebase Web API Key | `AIzaSyC-Sr3Nnz4_tMo-3ROqpwz-6ZxVnv2oiVs` |
+| `firebaseConfig.authDomain` | String | Firebase Auth Domain (Normalized) | `healio-309b3.firebaseapp.com` |
+| `firebaseConfig.projectId` | String | Firebase Project Identifier | `healio-309b3` |
+| `firebaseConfig.storageBucket` | String | Cloud Storage Bucket URI | `healio-309b3.firebasestorage.app` |
+| `firebaseConfig.messagingSenderId` | String | Cloud Messaging Sender ID | `425303107943` |
+| `firebaseConfig.appId` | String | Firebase Web Application ID | `1:425303107943:web:31a940ed553f913d82a7c2` |
+| `firebaseConfig.measurementId` | String | Google Analytics Measurement ID | `G-21N0J2K1Z9` |
 
 ---
 
@@ -469,10 +631,8 @@ Contributions are welcome! Please follow this workflow:
 3. Commit your modifications: `git commit -m 'feat: Add clinical telemetry metrics'`.
 4. Push to your branch: `git push origin feature/clinical-telemetry`.
 5. Open a Pull Request for review.
-
 ### License
 This project is open-source and licensed under the **[MIT License](LICENSE)**.
-
 ---
 
 <div align="center">

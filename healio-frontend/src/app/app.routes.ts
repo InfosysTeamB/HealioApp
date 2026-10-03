@@ -24,7 +24,6 @@ export const routes: Routes = [
   { path: 'video-call/:id', component: VideoConsultationComponent },
   { path: 'room/:id', component: VideoConsultationComponent },
   { path: 'meet/:id', component: VideoConsultationComponent },
-
   // Portals
   { 
     path: 'patient', 

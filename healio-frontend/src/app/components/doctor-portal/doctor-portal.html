@@ -155,7 +155,6 @@
         <span class="badge-tag">Allergies: <strong>{{ activePatient()?.profile?.allergies || 'None' }}</strong></span>
         <span class="badge-tag">Conditions: <strong>{{ activePatient()?.profile?.chronic_conditions || 'None' }}</strong></span>
       </div>
-
       <!-- Video Call Launch Action for Doctor -->
       <div class="doctor-video-call-action" *ngIf="activePatient()?.type === 'video' || activePatient()?.consultationType === 'video'" style="margin-left: auto;">
         <button type="button" class="btn-doctor-join-video" (click)="joinDoctorVideoCall(activePatient())" style="background: #10B981; color: #FFFFFF; border: none; padding: 0.6rem 1.1rem; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);">

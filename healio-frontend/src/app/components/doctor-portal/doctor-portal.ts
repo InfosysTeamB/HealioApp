@@ -435,7 +435,6 @@ export class DoctorPortalComponent implements OnInit {
       }
     });
   }
-
   selectRosterSlot(slot: any): void {
     const pId = slot.patient || slot.patient_id;
     if (pId) {

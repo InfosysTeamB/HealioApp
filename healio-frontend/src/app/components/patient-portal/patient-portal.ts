@@ -192,7 +192,6 @@ export class PatientPortalComponent implements OnInit {
       }
     });
   }
-
   logout(): void {
     this.authService.logout(true);
   }
