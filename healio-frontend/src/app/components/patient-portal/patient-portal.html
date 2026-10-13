@@ -12,6 +12,17 @@
     </div>
   </header>
 
+  <!-- Floating Live Toast Notification -->
+  <div *ngIf="toastMessage()" class="portal-toast" [class]="'toast-' + toastMessage()?.type" role="alert">
+    <div class="toast-content">
+      <span class="toast-icon" *ngIf="toastMessage()?.type === 'success'">✓</span>
+      <span class="toast-icon" *ngIf="toastMessage()?.type === 'info'">ℹ</span>
+      <span class="toast-icon" *ngIf="toastMessage()?.type === 'error'">⚠</span>
+      <span class="toast-text">{{ toastMessage()?.text }}</span>
+    </div>
+    <button type="button" class="toast-close" (click)="closeToast()" aria-label="Close notification">✕</button>
+  </div>
+
   <!-- Clean, Compact Patient Context Banner -->
   <section class="patient-identity-banner" aria-label="Verified Patient Clinical Profile">
     <div class="identity-profile-left">
@@ -68,7 +79,7 @@
       class="pnav-tab" 
       [class.active]="activePortalTab() === 'appointments'" 
       (click)="activePortalTab.set('appointments')">
-      <span>📅 Appointments ({{ userAppointments().length }})</span>
+      <span>📅 Appointments ({{ activeAppointmentsCount() }})</span>
     </button>
     <button 
       type="button" 
@@ -98,13 +109,39 @@
         </div>
         <div class="header-action-group">
           <span class="live-pill">Live Synced</span>
+          <span class="realtime-clock-pill">🕒 {{ realTimeTodayString }}</span>
           <a routerLink="/home" class="btn-new-booking-link" aria-label="Book new appointment on home screen">+ Book New Consultation</a>
         </div>
       </div>
 
+      <!-- Practo-Style Filter Tray -->
+      <div class="consultation-filter-tray" role="group" aria-label="Filter consultations">
+        <button 
+          type="button" 
+          class="filter-pill-btn" 
+          [class.active]="appointmentFilter() === 'upcoming'"
+          (click)="appointmentFilter.set('upcoming')">
+          Upcoming ({{ activeAppointmentsCount() }})
+        </button>
+        <button 
+          type="button" 
+          class="filter-pill-btn" 
+          [class.active]="appointmentFilter() === 'all'"
+          (click)="appointmentFilter.set('all')">
+          All ({{ userAppointments().length }})
+        </button>
+        <button 
+          type="button" 
+          class="filter-pill-btn" 
+          [class.active]="appointmentFilter() === 'cancelled'"
+          (click)="appointmentFilter.set('cancelled')">
+          Cancelled ({{ cancelledAppointmentsCount() }})
+        </button>
+      </div>
+
       <!-- Practo-Style Consultations List -->
-      <div class="practo-appointments-list" *ngIf="userAppointments().length > 0; else emptyAppointmentsTemplate">
-        <div *ngFor="let appt of userAppointments()" class="practo-appointment-card" [class.cancelled-card]="appt.status === 'Cancelled'">
+      <div class="practo-appointments-list" *ngIf="displayedAppointments().length > 0; else emptyAppointmentsTemplate">
+        <div *ngFor="let appt of displayedAppointments()" class="practo-appointment-card" [class.cancelled-card]="appt.status === 'Cancelled'">
           <div class="appt-card-header">
             <div class="appt-type-indicator">
               <span *ngIf="appt.consultationType === 'video'" class="consult-type-pill video-pill">
@@ -128,7 +165,7 @@
             <div class="doctor-profile-section">
               <img 
                 [src]="appt.doctorAvatar || 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=300&auto=format&fit=crop&q=80'" 
-                (error)="onDocImgError($event)"
+                (error)="onDocImgError($event)" 
                 [alt]="appt.doctorName" 
                 class="doctor-thumb" 
               />
@@ -145,7 +182,7 @@
             <div class="schedule-chips-block">
               <div class="schedule-chip date-chip">
                 <span class="chip-label">Date</span>
-                <strong class="chip-value">📅 {{ appt.date }}</strong>
+                <strong class="chip-value">📅 {{ formatApptDate(appt.date) }}</strong>
               </div>
               <div class="schedule-chip time-chip">
                 <span class="chip-label">Time Slot</span>
@@ -185,6 +222,7 @@
                 <span>Clinic Directions / View Details</span>
               </button>
 
+              <!-- Cancel Button for Active Consultations -->
               <button 
                 *ngIf="appt.status !== 'Cancelled' && appt.status !== 'Completed'" 
                 type="button" 
@@ -194,9 +232,28 @@
                 Cancel
               </button>
 
-              <span *ngIf="appt.status === 'Cancelled'" class="cancelled-notice">
-                Consultation Cancelled
-              </span>
+              <!-- Actions for Cancelled Consultations -->
+              <ng-container *ngIf="appt.status === 'Cancelled'">
+                <span class="cancelled-notice">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                  Cancelled
+                </span>
+                <button 
+                  type="button" 
+                  (click)="rebookConsultation(appt)" 
+                  class="btn-action-secondary btn-rebook-appt"
+                  aria-label="Rebook this consultation slot">
+                  Re-book
+                </button>
+                <button 
+                  type="button" 
+                  (click)="deleteAppointment(appt)" 
+                  class="btn-action-secondary btn-delete-appt"
+                  aria-label="Permanently remove cancelled consultation from history">
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                  Remove
+                </button>
+              </ng-container>
             </div>
           </div>
         </div>
@@ -214,11 +271,14 @@
               <path d="M9 16l2 2 4-4"/>
             </svg>
           </div>
-          <h4>No Scheduled Consultations</h4>
-          <p>You don't have any upcoming doctor appointments scheduled yet. Book an in-person clinic visit or instant video consultation with top specialists.</p>
+          <h4 *ngIf="appointmentFilter() === 'cancelled'">No Cancelled Consultations</h4>
+          <h4 *ngIf="appointmentFilter() === 'upcoming'">No Upcoming Consultations</h4>
+          <h4 *ngIf="appointmentFilter() === 'all'">No Scheduled Consultations</h4>
+          <p *ngIf="appointmentFilter() === 'cancelled'">You don't have any cancelled appointments in your records.</p>
+          <p *ngIf="appointmentFilter() !== 'cancelled'">You don't have any upcoming doctor appointments scheduled yet. Book an in-person clinic visit or instant video consultation with top specialists.</p>
           <div class="empty-cta-group">
             <a routerLink="/home" class="btn-primary-portal">+ Book New Consultation</a>
-            <a routerLink="/home" class="btn-secondary-portal">Browse Available Doctors</a>
+            <button *ngIf="appointmentFilter() !== 'upcoming'" type="button" (click)="appointmentFilter.set('upcoming')" class="btn-secondary-portal">View Upcoming</button>
           </div>
         </div>
       </ng-template>
@@ -384,6 +444,78 @@
 
       <div class="modal-footer">
         <button type="button" class="btn-modal-close" (click)="closeClinicDetails()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- IN-APP CANCELLATION CONFIRMATION MODAL -->
+  <div *ngIf="cancellationModalAppt() as appt" class="cancellation-modal-backdrop" (click)="closeCancelModal()" role="dialog" aria-modal="true" aria-labelledby="cancel-modal-title">
+    <div class="cancellation-modal" (click)="$event.stopPropagation()">
+      <div class="cancel-modal-header">
+        <div class="cancel-modal-icon-badge" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#dc2626" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+        </div>
+        <div class="cancel-modal-title-group">
+          <h3 id="cancel-modal-title">Cancel Consultation</h3>
+          <p class="cancel-modal-subtitle">Are you sure you want to cancel this booking?</p>
+        </div>
+        <button type="button" class="btn-cancel-modal-close" (click)="closeCancelModal()" aria-label="Close dialog">✕</button>
+      </div>
+
+      <div class="cancel-modal-body">
+        <div class="cancel-modal-doctor-card">
+          <img 
+            [src]="appt.doctorAvatar || 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=300&auto=format&fit=crop&q=80'" 
+            (error)="onDocImgError($event)" 
+            [alt]="appt.doctorName" 
+            class="cancel-modal-thumb" 
+          />
+          <div class="cancel-modal-doc-info">
+            <h4 class="cancel-modal-doc-name">{{ appt.doctorName }}</h4>
+            <p class="cancel-modal-doc-spec">{{ appt.doctorSpecialization }}</p>
+            <p class="cancel-modal-clinic">📍 {{ appt.doctorClinic || 'Healio Medical Center' }}</p>
+          </div>
+        </div>
+
+        <div class="cancel-modal-time-tray">
+          <div class="cancel-time-item">
+            <span class="cancel-time-lbl">Date</span>
+            <strong class="cancel-time-val">📅 {{ formatApptDate(appt.date) }}</strong>
+          </div>
+          <div class="cancel-time-item">
+            <span class="cancel-time-lbl">Time Slot</span>
+            <strong class="cancel-time-val">⏰ {{ appt.timeSlot }}</strong>
+          </div>
+          <div class="cancel-time-item">
+            <span class="cancel-time-lbl">Type</span>
+            <strong class="cancel-time-val">{{ appt.consultationType === 'video' ? 'Video Call' : 'In-Person Visit' }}</strong>
+          </div>
+        </div>
+
+        <div class="cancel-modal-alert-box">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#b45309" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="16" x2="12" y2="12"/>
+            <line x1="12" y1="8" x2="12.01" y2="8"/>
+          </svg>
+          <p>This slot will be released back to the clinic's availability roster. You can re-book this consultation anytime if needed.</p>
+        </div>
+      </div>
+
+      <div class="cancel-modal-footer">
+        <button type="button" class="btn-cancel-modal-keep" (click)="closeCancelModal()">
+          Keep Consultation
+        </button>
+        <button type="button" class="btn-cancel-modal-confirm" (click)="confirmCancellation(false)">
+          Yes, Cancel Booking
+        </button>
+        <button type="button" class="btn-cancel-modal-remove" (click)="confirmCancellation(true)" title="Cancel and remove completely from patient history">
+          Cancel & Remove from List
+        </button>
       </div>
     </div>
   </div>

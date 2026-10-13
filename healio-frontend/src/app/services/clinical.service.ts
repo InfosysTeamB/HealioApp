@@ -2,6 +2,16 @@ import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
+export function getRealTimeDateFormatted(offsetDays: number = 0): string {
+  const d = new Date();
+  d.setDate(d.getDate() + offsetDays);
+  const weekday = d.toLocaleDateString('en-GB', { weekday: 'short' });
+  const day = d.toLocaleDateString('en-GB', { day: '2-digit' });
+  const month = d.toLocaleDateString('en-GB', { month: 'short' });
+  const year = d.getFullYear();
+  return `${weekday}, ${day} ${month} ${year}`;
+}
+
 export interface AppointmentRecord {
   id?: string;
   consultationType: 'in-person' | 'video';
@@ -185,6 +195,8 @@ export class ClinicalService {
       }
     } catch {}
 
+    const todayDate = getRealTimeDateFormatted(0);
+
     const defaultSeed: AppointmentRecord[] = [
       {
         id: 'APPT-DEMO-001',
@@ -194,7 +206,7 @@ export class ClinicalService {
         doctorName: 'Dr. Ramesh Rao',
         doctorSpecialization: 'Cardiologist',
         doctorClinic: 'Apollo Cradle Clinic',
-        date: 'Today',
+        date: todayDate,
         timeSlot: '04:30 PM',
         status: 'Confirmed',
         doctorAvatar: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=300&auto=format&fit=crop&q=80'
@@ -207,7 +219,7 @@ export class ClinicalService {
         doctorName: 'Dr. Ramesh Rao',
         doctorSpecialization: 'Cardiologist',
         doctorClinic: 'Apollo Cradle Clinic',
-        date: 'Today',
+        date: todayDate,
         timeSlot: '05:30 PM',
         status: 'Confirmed',
         doctorAvatar: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=300&auto=format&fit=crop&q=80'
@@ -220,7 +232,7 @@ export class ClinicalService {
         doctorName: 'Dr. Ramesh Rao',
         doctorSpecialization: 'Cardiologist',
         doctorClinic: 'Apollo Cradle Clinic',
-        date: 'Today',
+        date: todayDate,
         timeSlot: '06:15 PM',
         status: 'Confirmed',
         doctorAvatar: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=300&auto=format&fit=crop&q=80'
@@ -273,7 +285,7 @@ export class ClinicalService {
       doctorName: record.doctorName,
       doctorSpecialization: record.doctorSpecialization,
       doctorClinic: record.doctorClinic || (record.consultationType === 'video' ? 'Healio TeleHealth' : 'Apollo Cradle Clinic'),
-      date: record.date || 'Today',
+      date: record.date || getRealTimeDateFormatted(0),
       timeSlot: record.timeSlot,
       status: record.status || 'Confirmed',
       meetingLink,
@@ -311,12 +323,90 @@ export class ClinicalService {
     return demoFallback || null;
   }
 
-  cancelAppointmentRecord(id: string): void {
-    const updated = this.appointments().map(a => 
-      a.id === id ? { ...a, status: 'Cancelled' as const } : a
-    );
-    this.appointments.set(updated);
-    this.saveAppointmentsToStorage(updated);
+  cancelAppointmentRecord(idOrAppt: string | AppointmentRecord): boolean {
+    const targetId = typeof idOrAppt === 'string' 
+      ? idOrAppt.trim() 
+      : (idOrAppt?.id ? idOrAppt.id.trim() : '');
+    const targetObj = typeof idOrAppt === 'object' ? idOrAppt : null;
+
+    let matched = false;
+    const updated = this.appointments().map(a => {
+      const matchId = !!(targetId && a.id && a.id.trim().toLowerCase() === targetId.toLowerCase());
+      const matchDetails = !!(targetObj && (
+        a.doctorName?.trim().toLowerCase() === targetObj.doctorName?.trim().toLowerCase() &&
+        a.timeSlot?.trim() === targetObj.timeSlot?.trim() &&
+        (a.date === targetObj.date || !a.date || !targetObj.date)
+      ));
+
+      if (matchId || matchDetails) {
+        matched = true;
+        return { ...a, status: 'Cancelled' as const };
+      }
+      return a;
+    });
+
+    if (matched) {
+      this.appointments.set(updated);
+      this.saveAppointmentsToStorage(updated);
+    }
+    return matched;
+  }
+
+  deleteAppointmentRecord(idOrAppt: string | AppointmentRecord): boolean {
+    const targetId = typeof idOrAppt === 'string' 
+      ? idOrAppt.trim() 
+      : (idOrAppt?.id ? idOrAppt.id.trim() : '');
+    const targetObj = typeof idOrAppt === 'object' ? idOrAppt : null;
+
+    let matched = false;
+    const updated = this.appointments().filter(a => {
+      const matchId = !!(targetId && a.id && a.id.trim().toLowerCase() === targetId.toLowerCase());
+      const matchDetails = !!(targetObj && (
+        a.doctorName?.trim().toLowerCase() === targetObj.doctorName?.trim().toLowerCase() &&
+        a.timeSlot?.trim() === targetObj.timeSlot?.trim() &&
+        (a.date === targetObj.date || !a.date || !targetObj.date)
+      ));
+
+      if (matchId || matchDetails) {
+        matched = true;
+        return false;
+      }
+      return true;
+    });
+
+    if (matched) {
+      this.appointments.set(updated);
+      this.saveAppointmentsToStorage(updated);
+    }
+    return matched;
+  }
+
+  rebookAppointmentRecord(idOrAppt: string | AppointmentRecord): boolean {
+    const targetId = typeof idOrAppt === 'string' 
+      ? idOrAppt.trim() 
+      : (idOrAppt?.id ? idOrAppt.id.trim() : '');
+    const targetObj = typeof idOrAppt === 'object' ? idOrAppt : null;
+
+    let matched = false;
+    const updated = this.appointments().map(a => {
+      const matchId = !!(targetId && a.id && a.id.trim().toLowerCase() === targetId.toLowerCase());
+      const matchDetails = !!(targetObj && (
+        a.doctorName?.trim().toLowerCase() === targetObj.doctorName?.trim().toLowerCase() &&
+        a.timeSlot?.trim() === targetObj.timeSlot?.trim()
+      ));
+
+      if (matchId || matchDetails) {
+        matched = true;
+        return { ...a, status: 'Confirmed' as const };
+      }
+      return a;
+    });
+
+    if (matched) {
+      this.appointments.set(updated);
+      this.saveAppointmentsToStorage(updated);
+    }
+    return matched;
   }
 
   getPatients(): Observable<Patient[]> {

@@ -1065,9 +1065,39 @@
         </div>
       </div>
 
+      <!-- Real-Time Consultation Date Selection Tray -->
+      <div class="booking-dates-tray">
+        <div class="section-label-row">
+          <label class="section-label">Select Consultation Date:</label>
+          <span class="live-realtime-badge">
+            <span class="realtime-dot"></span>
+            <span>Real-Time Sync • {{ liveClockTime() }}</span>
+          </span>
+        </div>
+        <div class="date-pills-scroll" role="group" aria-label="Available Consultation Dates">
+          @for (d of realTimeBookingDates(); track d.isoDate) {
+          <button 
+            type="button" 
+            class="date-pill-btn" 
+            [class.active]="selectedBookingDate().isoDate === d.isoDate"
+            [class.is-today]="d.isToday"
+            (click)="selectBookingDate(d)">
+            <span class="date-pill-day">{{ d.dayLabel }}</span>
+            <span class="date-pill-calendar">{{ d.formattedShort }}</span>
+            <span class="date-pill-badge" [class.live]="d.isToday">
+              {{ d.isToday ? 'Live Today' : (d.availableSlotsCount + ' slots') }}
+            </span>
+          </button>
+          }
+        </div>
+      </div>
+
       <!-- Time Slot Selection -->
       <div class="booking-slots-tray">
-        <label class="section-label">Select Preferred Time Slot (Today):</label>
+        <div class="section-label-row">
+          <label class="section-label">Select Preferred Time Slot:</label>
+          <span class="selected-date-indicator">For {{ selectedBookingDate().dayLabel }} ({{ selectedBookingDate().formattedShort }})</span>
+        </div>
         <div class="slot-pills-grid">
           @for (slot of availableBookingSlots; track slot) {
           <button type="button" class="slot-pill-btn" [class.active]="selectedBookingSlot() === slot" (click)="selectBookingSlot(slot)">
@@ -1095,12 +1125,18 @@
           <strong class="summary-value">{{ doc.name }} ({{ doc.specialty }})</strong>
         </div>
         }
+        <div class="summary-row highlight-row">
+          <span class="summary-label">Consultation Date & Time:</span>
+          <strong class="summary-value date-time-highlight">
+            📅 {{ selectedBookingDate().formattedFull }} ({{ selectedBookingDate().dayLabel }}) • ⏰ {{ selectedBookingSlot() }}
+          </strong>
+        </div>
       </div>
 
       <!-- Modal Footer CTA -->
       <div class="booking-footer">
         <button type="button" class="action-btn btn-confirm-booking" (click)="confirmBookingFromSheet()">
-          Confirm {{ bookingConsultationType() === 'video' ? 'Video Call' : 'Clinic Visit' }} ({{ selectedBookingSlot() }})
+          Confirm {{ bookingConsultationType() === 'video' ? 'Video Call' : 'Clinic Visit' }} • {{ selectedBookingDate().dayLabel }} ({{ selectedBookingDate().formattedShort }}) at {{ selectedBookingSlot() }}
         </button>
       </div>
     </div>

@@ -1,2 +1,8 @@
 healio-backend/venv/
+healio-backend/.venv/
 healio-frontend/node_modules/
+healio-frontend/dist/
+__pycache__/
+*.pyc
+*.pyo
+.env

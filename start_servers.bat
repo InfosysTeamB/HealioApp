@@ -4,7 +4,7 @@ echo Starting Healio Patient Management System...
 echo ===================================================
 
 echo [1/2] Launching Django Backend Server (Port 8000)...
-start "Healio Backend (Django)" cmd /k "cd /d %~dp0healio-backend && .\venv\Scripts\activate && python manage.py runserver 0.0.0.0:8000"
+start "Healio Backend (Django)" cmd /k "cd /d %~dp0healio-backend && (if exist .venv\Scripts\activate.bat (call .venv\Scripts\activate.bat) else (call venv\Scripts\activate.bat)) && python manage.py runserver 0.0.0.0:8000"
 
 timeout /t 3 /nobreak > nul
 

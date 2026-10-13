@@ -12,6 +12,7 @@ import {
 } from '../../services/clinical.service';
 import { AuthService, UserSession } from '../../services/auth.service';
 import { PrescriptionService, FullPrescription } from '../../services/prescription.service';
+import { DoctorStreamService } from '../../services/doctor-stream.service';
 
 @Component({
   selector: 'app-patient-portal',
@@ -24,6 +25,7 @@ export class PatientPortalComponent implements OnInit {
   private clinicalService = inject(ClinicalService);
   private authService = inject(AuthService);
   private prescriptionService = inject(PrescriptionService);
+  private doctorStream = inject(DoctorStreamService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private cdr = inject(ChangeDetectorRef);
@@ -33,6 +35,16 @@ export class PatientPortalComponent implements OnInit {
   currentPatient: Patient | null = null;
 
   activePortalTab = signal<'all' | 'appointments' | 'records' | 'prescriptions'>('all');
+
+  // Filter for consultations tab: 'upcoming' (default active), 'all', or 'cancelled'
+  appointmentFilter = signal<'upcoming' | 'all' | 'cancelled'>('upcoming');
+
+  // Cancellation modal state
+  cancellationModalAppt = signal<AppointmentRecord | null>(null);
+
+  // Live Toast feedback
+  toastMessage = signal<{ type: 'success' | 'info' | 'error'; text: string } | null>(null);
+  private toastTimeout: any = null;
 
   // Reactive signal of rich prescriptions synchronized across doctor & patient
   fullPrescriptions = computed(() => {
@@ -61,9 +73,39 @@ export class PatientPortalComponent implements OnInit {
     return all.filter(a => a.patientEmail === 'patient@healio.health');
   });
 
+  // Active / Upcoming appointments count
+  activeAppointmentsCount = computed(() => {
+    return this.userAppointments().filter(a => a.status !== 'Cancelled').length;
+  });
+
+  // Cancelled appointments count
+  cancelledAppointmentsCount = computed(() => {
+    return this.userAppointments().filter(a => a.status === 'Cancelled').length;
+  });
+
+  // Displayed appointments based on selected filter
+  displayedAppointments = computed(() => {
+    const list = this.userAppointments();
+    const filter = this.appointmentFilter();
+    if (filter === 'upcoming') {
+      return list.filter(a => a.status !== 'Cancelled');
+    }
+    if (filter === 'cancelled') {
+      return list.filter(a => a.status === 'Cancelled');
+    }
+    return list;
+  });
+
   selectedAppointmentDetails = signal<AppointmentRecord | null>(null);
   patientPrescriptions: Prescription[] = [];
   patientConsultations: Consultation[] = [];
+
+  readonly realTimeTodayString = new Date().toLocaleDateString('en-GB', { 
+    weekday: 'short', 
+    day: '2-digit', 
+    month: 'short', 
+    year: 'numeric' 
+  });
 
   ngOnInit(): void {
     this.currentUser = this.authService.getUser();
@@ -97,12 +139,78 @@ export class PatientPortalComponent implements OnInit {
     this.selectedAppointmentDetails.set(null);
   }
 
-  cancelConsultation(appt: AppointmentRecord): void {
-    if (!appt.id) return;
-    const confirmCancel = confirm(`Are you sure you want to cancel your consultation with ${appt.doctorName} on ${appt.date} at ${appt.timeSlot}?`);
-    if (!confirmCancel) return;
+  formatApptDate(date?: string): string {
+    if (!date || date.toLowerCase() === 'today') {
+      const now = new Date();
+      const weekday = now.toLocaleDateString('en-GB', { weekday: 'short' });
+      const day = now.toLocaleDateString('en-GB', { day: '2-digit' });
+      const month = now.toLocaleDateString('en-GB', { month: 'short' });
+      const year = now.getFullYear();
+      return `${weekday}, ${day} ${month} ${year} (Today)`;
+    }
+    return date;
+  }
 
-    this.clinicalService.cancelAppointmentRecord(appt.id);
+  showToast(type: 'success' | 'info' | 'error', text: string): void {
+    if (this.toastTimeout) {
+      clearTimeout(this.toastTimeout);
+    }
+    this.toastMessage.set({ type, text });
+    this.toastTimeout = setTimeout(() => {
+      this.toastMessage.set(null);
+    }, 5000);
+  }
+
+  closeToast(): void {
+    if (this.toastTimeout) {
+      clearTimeout(this.toastTimeout);
+    }
+    this.toastMessage.set(null);
+  }
+
+  openCancelModal(appt: AppointmentRecord): void {
+    this.cancellationModalAppt.set(appt);
+  }
+
+  closeCancelModal(): void {
+    this.cancellationModalAppt.set(null);
+  }
+
+  confirmCancellation(permanentlyRemove: boolean = false): void {
+    const appt = this.cancellationModalAppt();
+    if (!appt) return;
+
+    if (permanentlyRemove) {
+      this.clinicalService.deleteAppointmentRecord(appt);
+      this.doctorStream.releaseSlot(appt.doctorName, appt.timeSlot);
+      this.showToast('success', `Consultation with ${appt.doctorName} was removed from your records.`);
+    } else {
+      this.clinicalService.cancelAppointmentRecord(appt);
+      this.doctorStream.releaseSlot(appt.doctorName, appt.timeSlot);
+      this.showToast('success', `Consultation with ${appt.doctorName} on ${this.formatApptDate(appt.date)} (${appt.timeSlot}) has been cancelled. Slot released.`);
+    }
+
+    this.cancellationModalAppt.set(null);
+    this.cdr.detectChanges();
+  }
+
+  cancelConsultation(appt: AppointmentRecord): void {
+    this.openCancelModal(appt);
+  }
+
+  deleteAppointment(appt: AppointmentRecord): void {
+    const confirmed = confirm(`Are you sure you want to permanently remove this consultation with ${appt.doctorName} from your history?`);
+    if (!confirmed) return;
+
+    this.clinicalService.deleteAppointmentRecord(appt);
+    this.doctorStream.releaseSlot(appt.doctorName, appt.timeSlot);
+    this.showToast('info', `Consultation record removed.`);
+    this.cdr.detectChanges();
+  }
+
+  rebookConsultation(appt: AppointmentRecord): void {
+    this.clinicalService.rebookAppointmentRecord(appt);
+    this.showToast('success', `Consultation with ${appt.doctorName} has been re-scheduled.`);
     this.cdr.detectChanges();
   }
 

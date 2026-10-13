@@ -1,4 +1,4 @@
-import { Component, signal, computed, inject, OnInit } from '@angular/core';
+import { Component, signal, computed, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -8,6 +8,18 @@ import { InpersonConsultCardComponent } from '../../shared/inperson-consult-card
 import { DoctorStreamService, ClinicDoctor } from '../../services/doctor-stream.service';
 import { AuthService, UserSession } from '../../services/auth.service';
 import { ClinicalService, AppointmentRecord } from '../../services/clinical.service';
+
+export interface RealTimeBookingDate {
+  rawDate: Date;
+  isoDate: string;
+  dayLabel: string;
+  dayOfWeek: string;
+  formattedShort: string;
+  formattedFull: string;
+  isToday: boolean;
+  isTomorrow: boolean;
+  availableSlotsCount: number;
+}
 
 export interface Speciality {
   name: string;
@@ -63,7 +75,7 @@ export interface VideoDoctor {
   templateUrl: './landing.html',
   styleUrl: './landing.css'
 })
-export class LandingComponent implements OnInit {
+export class LandingComponent implements OnInit, OnDestroy {
   private doctorStream = inject(DoctorStreamService);
   private authService = inject(AuthService);
   private clinicalService = inject(ClinicalService);
@@ -85,6 +97,61 @@ export class LandingComponent implements OnInit {
   bookingConfirmationSuccess = signal<string | null>(null);
 
   availableBookingSlots = ['09:30 AM', '11:00 AM', '02:30 PM', '04:30 PM', '06:00 PM'];
+
+  // Real-Time Consultation Booking Dates & Live Clock
+  realTimeBookingDates = signal<RealTimeBookingDate[]>(this.generateRealTimeBookingDates());
+  selectedBookingDate = signal<RealTimeBookingDate>(this.realTimeBookingDates()[0]);
+  liveClockTime = signal<string>('');
+  private liveClockInterval: any = null;
+
+
+  ngOnDestroy(): void {
+    if (this.liveClockInterval) {
+      clearInterval(this.liveClockInterval);
+    }
+  }
+
+  private updateLiveClock(): void {
+    const now = new Date();
+    this.liveClockTime.set(
+      now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })
+    );
+  }
+
+  generateRealTimeBookingDates(): RealTimeBookingDate[] {
+    const dates: RealTimeBookingDate[] = [];
+    const baseSlots = [6, 8, 12, 9, 11, 7, 10];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() + i);
+      const isToday = i === 0;
+      const isTomorrow = i === 1;
+      const weekday = d.toLocaleDateString('en-GB', { weekday: 'short' });
+      const dayOfWeek = d.toLocaleDateString('en-GB', { weekday: 'long' });
+      const dayLabel = isToday ? 'Today' : isTomorrow ? 'Tomorrow' : weekday;
+      const formattedShort = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+      const formattedFull = `${weekday}, ${formattedShort} ${d.getFullYear()}`;
+      const isoDate = d.toISOString().split('T')[0];
+      const availableSlotsCount = isToday ? this.availableBookingSlots.length : baseSlots[i % baseSlots.length];
+
+      dates.push({
+        rawDate: d,
+        isoDate,
+        dayLabel,
+        dayOfWeek,
+        formattedShort,
+        formattedFull,
+        isToday,
+        isTomorrow,
+        availableSlotsCount
+      });
+    }
+    return dates;
+  }
+
+  selectBookingDate(date: RealTimeBookingDate): void {
+    this.selectedBookingDate.set(date);
+  }
 
   // Verified User auth and profile drawer state
   readonly currentUser = this.authService.currentUser;
@@ -490,6 +557,10 @@ export class LandingComponent implements OnInit {
   ]);
 
   ngOnInit() {
+    this.updateLiveClock();
+    this.liveClockInterval = setInterval(() => {
+      this.updateLiveClock();
+    }, 1000);
     this.loadRecentlyViewed();
     this.initMedicalProfileForm();
 
@@ -862,10 +933,11 @@ export class LandingComponent implements OnInit {
   }
 
   // --- Live Instant Slot Booking ---
-  handleSlotBooking(event: { doctorId: string; slot: string }) {
+  handleSlotBooking(event: { doctorId: string; slot: string; date?: string }) {
     const res = this.doctorStream.bookSlotOptimistic(event.doctorId, event.slot);
     const doc = res.doctor || this.inPersonDoctors().find(d => d.id === event.doctorId);
     const user = this.currentUser() || this.getStoredUser();
+    const chosenDate = event.date || this.selectedBookingDate().formattedFull;
 
     if (doc) {
       this.clinicalService.bookAppointment({
@@ -875,7 +947,7 @@ export class LandingComponent implements OnInit {
         doctorName: doc.name,
         doctorSpecialization: doc.specialty,
         doctorClinic: (doc as any).clinicName || (doc as any).clinic || 'Apollo Cradle Clinic',
-        date: 'Today',
+        date: chosenDate,
         timeSlot: event.slot,
         status: 'Confirmed',
         doctorAvatar: doc.avatarUrl
@@ -883,11 +955,11 @@ export class LandingComponent implements OnInit {
     }
 
     if (res.success && res.doctor) {
-      console.log(`[Healio Booking] Locked slot ${event.slot} with ${res.doctor.name}`);
+      console.log(`[Healio Booking] Locked slot ${event.slot} on ${chosenDate} with ${res.doctor.name}`);
       this.addToRecentlyViewed({
         id: 'doc-' + res.doctor.id,
         title: res.doctor.name,
-        subtitle: `${res.doctor.specialty} • Slot ${event.slot}`,
+        subtitle: `${res.doctor.specialty} • ${chosenDate} at ${event.slot}`,
         type: 'doctor',
         doctorId: res.doctor.id,
         query: res.doctor.name
@@ -900,6 +972,9 @@ export class LandingComponent implements OnInit {
     this.bookingConsultationType.set(type);
     this.bookingConfirmationSuccess.set(null);
     this.selectedBookingSlot.set('04:30 PM');
+    const freshDates = this.generateRealTimeBookingDates();
+    this.realTimeBookingDates.set(freshDates);
+    this.selectedBookingDate.set(freshDates[0]);
 
     if (doctor) {
       this.selectedDoctorForBooking.set(doctor);
@@ -931,6 +1006,7 @@ export class LandingComponent implements OnInit {
     const type = this.bookingConsultationType();
     const doc = this.selectedDoctorForBooking();
     const slot = this.selectedBookingSlot();
+    const chosenDate = this.selectedBookingDate();
 
     if (!doc) return;
 
@@ -946,19 +1022,19 @@ export class LandingComponent implements OnInit {
       doctorName: docName,
       doctorSpecialization: docSpecialty,
       doctorClinic: clinic,
-      date: 'Today',
+      date: chosenDate.formattedFull,
       timeSlot: slot,
       status: 'Confirmed',
       doctorAvatar: avatar
     });
 
-    this.bookingConfirmationSuccess.set(`Appointment confirmed for ${slot}!`);
+    this.bookingConfirmationSuccess.set(`Appointment confirmed for ${chosenDate.dayLabel} (${chosenDate.formattedShort}) at ${slot}!`);
 
     setTimeout(() => {
       this.isBookingSheetOpen.set(false);
       this.bookingConfirmationSuccess.set(null);
       this.isProfileDrawerOpen.set(true);
-    }, 600);
+    }, 750);
   }
 
   joinVideoConsultation(appt?: AppointmentRecord | any) {

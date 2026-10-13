@@ -20,6 +20,12 @@ export interface ClinicDoctor {
   symptoms: string[];
 }
 
+export function getTodayDateSlotLabel(): string {
+  const d = new Date();
+  const shortDate = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+  return `Today (${shortDate})`;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -37,7 +43,7 @@ export class DoctorStreamService implements OnDestroy {
       distanceKm: 1.8,
       fee: 800,
       avatarUrl: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=300&auto=format&fit=crop&q=80',
-      nextAvailableSlot: 'Today at 4:30 PM',
+      nextAvailableSlot: `${getTodayDateSlotLabel()} at 4:30 PM`,
       availableSlots: ['04:30 PM', '05:00 PM', '05:30 PM', '06:15 PM'],
       bookedSlots: [],
       lat: 12.9784,
@@ -174,7 +180,7 @@ export class DoctorStreamService implements OnDestroy {
         doctor.availableSlots = currentSlots;
         doctor.bookedSlots = bookedSlots;
         if (currentSlots.length > 0) {
-          doctor.nextAvailableSlot = `Today at ${currentSlots[0]}`;
+          doctor.nextAvailableSlot = `${getTodayDateSlotLabel()} at ${currentSlots[0]}`;
         }
       } else if (currentSlots.length < 4) {
         const newSlot = '07:45 PM';
@@ -203,7 +209,7 @@ export class DoctorStreamService implements OnDestroy {
         const updatedAvailable = doc.availableSlots.filter(s => s !== slot);
         const updatedBooked = [...(doc.bookedSlots || []), slot];
         const nextSlot = updatedAvailable.length > 0 
-          ? `Today at ${updatedAvailable[0]}` 
+          ? `${getTodayDateSlotLabel()} at ${updatedAvailable[0]}` 
           : 'Next Available: Tomorrow';
 
         bookedDoctor = {
@@ -224,6 +230,43 @@ export class DoctorStreamService implements OnDestroy {
       };
     }
     return { success: false, message: 'Doctor not found' };
+  }
+
+  /**
+   * Releases a previously booked slot back to the doctor's available list upon cancellation
+   */
+  releaseSlot(doctorNameOrId: string, slot: string): { success: boolean; message: string } {
+    let released = false;
+    const target = (doctorNameOrId || '').toLowerCase().trim();
+
+    this.doctors.update(currentList => {
+      return currentList.map(doc => {
+        const matchesDoc = doc.id.toLowerCase().trim() === target || 
+                           doc.name.toLowerCase().trim() === target ||
+                           doc.name.toLowerCase().includes(target);
+        if (!matchesDoc) return doc;
+
+        const updatedBooked = (doc.bookedSlots || []).filter(s => s !== slot);
+        const updatedAvailable = doc.availableSlots.includes(slot) 
+          ? doc.availableSlots 
+          : [...doc.availableSlots, slot];
+        
+        released = true;
+        return {
+          ...doc,
+          availableSlots: updatedAvailable,
+          bookedSlots: updatedBooked,
+          nextAvailableSlot: updatedAvailable.length > 0 
+            ? `${getTodayDateSlotLabel()} at ${updatedAvailable[0]}` 
+            : 'Next Available: Tomorrow'
+        };
+      });
+    });
+
+    return {
+      success: released,
+      message: released ? `Slot ${slot} released for doctor` : 'Doctor not found'
+    };
   }
 
   /**

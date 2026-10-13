@@ -64,10 +64,27 @@
         </svg>
         <div class="lock-text">
           <strong>Spot Reserved & Locked</strong>
-          <span>{{ bookedSlot() }} • Zero wait time</span>
+          <span>📅 {{ bookedDate() || selectedDate().dayLabel }} • ⏰ {{ bookedSlot() }} • Zero wait time</span>
         </div>
       </div>
     } @else {
+      <!-- Real-Time Booking Dates Selector -->
+      <div class="card-dates-strip" role="group" aria-label="Select consultation booking date">
+        @for (d of realTimeDates; track d.isoDate) {
+          <button 
+            type="button" 
+            class="card-date-btn" 
+            [class.active]="selectedDate().isoDate === d.isoDate"
+            [class.is-today]="d.isToday"
+            (click)="chooseDate(d)"
+            [attr.aria-pressed]="selectedDate().isoDate === d.isoDate"
+            [attr.aria-label]="'Select ' + d.dayLabel + ', ' + d.shortDate">
+            <span class="date-chip-label">{{ d.dayLabel }}</span>
+            <span class="date-chip-day">{{ d.shortDate }}</span>
+          </button>
+        }
+      </div>
+
       <div class="slot-chips" role="group" aria-label="Available appointment time slots">
         @for (slot of doctor.availableSlots; track slot) {
           <button 
@@ -104,11 +121,11 @@
       [attr.aria-label]="bookingStatus() === 'booked' ? 'Appointment confirmed for ' + bookedSlot() : 'Book appointment with ' + doctor.name + ' for ' + (selectedSlot() || doctor.availableSlots[0] || 'visit')"
       (click)="confirmBooking()">
       @if (bookingStatus() === 'booked') {
-        <span>✓ Confirmed ({{ bookedSlot() }})</span>
+        <span>✓ Confirmed ({{ selectedDate().dayLabel }}, {{ bookedSlot() }})</span>
       } @else if (selectedSlot()) {
-        <span>Book for {{ selectedSlot() }}</span>
+        <span>Book for {{ selectedDate().dayLabel }} ({{ selectedSlot() }})</span>
       } @else {
-        <span>Book Slot ({{ doctor.availableSlots[0] || 'Visit' }})</span>
+        <span>Book {{ selectedDate().dayLabel }} ({{ doctor.availableSlots[0] || 'Visit' }})</span>
       }
     </button>
   </div>

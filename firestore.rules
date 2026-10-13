@@ -1,0 +1,47 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // =========================================================================
+    // SECURITY HELPER FUNCTIONS
+    // =========================================================================
+
+    /**
+     * Verifies that the client request contains a valid, verified Firebase Auth token.
+     */
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    /**
+     * Ensures that the requesting user's UID strictly matches the document owner's userId.
+     */
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // =========================================================================
+    // GLOBAL DEFAULT DENY (STRICT PRODUCTION MODE)
+    // =========================================================================
+    // Any path not explicitly matched and permitted below is locked down.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // =========================================================================
+    // SANDBOXED USER RECORD PATH (/users/{userId})
+    // =========================================================================
+    // Only authenticated users can read, create, update, or delete their own
+    // profile and nested clinical subcollections.
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+
+      // Recursive sandboxing for all nested subcollections
+      // (e.g. /users/{userId}/appointments/{appointmentId}, /users/{userId}/prescriptions/{id})
+      match /{allSubcollections=**} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+  }
+}

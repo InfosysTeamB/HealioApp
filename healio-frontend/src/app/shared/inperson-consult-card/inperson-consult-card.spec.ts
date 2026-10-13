@@ -1,17 +1,11 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import '@angular/compiler';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { InpersonConsultCardComponent } from './inperson-consult-card';
 
 describe('InpersonConsultCardComponent', () => {
   let component: InpersonConsultCardComponent;
-  let fixture: ComponentFixture<InpersonConsultCardComponent>;
-
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [InpersonConsultCardComponent],
-    }).compileComponents();
-
-    fixture = TestBed.createComponent(InpersonConsultCardComponent);
-    component = fixture.componentInstance;
+  beforeEach(() => {
+    component = new InpersonConsultCardComponent();
     component.doctor = {
       id: 'doc-test',
       name: 'Dr. Test',
@@ -30,10 +24,33 @@ describe('InpersonConsultCardComponent', () => {
       lng: 77.59,
       symptoms: ['heart']
     };
-    await fixture.whenStable();
   });
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('should initialize real-time booking dates with Today as the active date', () => {
+    expect(component.realTimeDates.length).toBeGreaterThan(0);
+    expect(component.realTimeDates[0].isToday).toBe(true);
+    expect(component.selectedDate().isToday).toBe(true);
+  });
+
+  it('should switch selected date when chooseDate is called', () => {
+    const tomorrow = component.realTimeDates[1];
+    component.chooseDate(tomorrow);
+    expect(component.selectedDate().isoDate).toBe(tomorrow.isoDate);
+  });
+
+  it('should emit slotSelected with doctorId, slot, and real-time date', () => {
+    let emitted: any;
+    component.slotSelected.subscribe((val) => (emitted = val));
+    component.confirmBooking();
+
+    expect(emitted).toBeDefined();
+    expect(emitted.doctorId).toBe('doc-test');
+    expect(emitted.slot).toBe('05:00 PM');
+    expect(emitted.date).toBe(component.selectedDate().fullDate);
+    expect(component.bookingStatus()).toBe('booked');
   });
 });

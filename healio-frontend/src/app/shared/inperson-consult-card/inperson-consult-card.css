@@ -301,6 +301,74 @@
   color: #B45309;
 }
 
+/* Real-Time Consultation Date Pills Strip */
+.card-dates-strip {
+  display: flex;
+  gap: 0.4rem;
+  overflow-x: auto;
+  padding: 2px 0 4px;
+  width: 100%;
+  scrollbar-width: none;
+}
+
+.card-dates-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.card-date-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #FFFFFF;
+  border: 1.5px solid #E2E8F0;
+  border-radius: 8px;
+  padding: 0.25rem 0.55rem;
+  min-width: 68px;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  flex-shrink: 0;
+  line-height: 1.15;
+}
+
+.card-date-btn:hover {
+  border-color: #0E9F6E;
+  background: #F0FDF4;
+}
+
+.card-date-btn.active {
+  background: #ECFDF5;
+  border-color: #0E9F6E;
+  box-shadow: 0 2px 6px rgba(14, 159, 110, 0.2);
+}
+
+.card-date-btn .date-chip-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #64748B;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.card-date-btn.active .date-chip-label {
+  color: #047857;
+}
+
+.card-date-btn .date-chip-day {
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: #1E293B;
+  margin-top: 1px;
+}
+
+.card-date-btn.active .date-chip-day {
+  color: #0E9F6E;
+}
+
+.card-date-btn.is-today .date-chip-label {
+  color: #0E9F6E;
+}
+
 .slot-chips {
   display: flex;
   gap: 0.45rem;
