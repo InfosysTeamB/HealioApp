@@ -721,48 +721,27 @@ export class LandingComponent implements OnInit, OnDestroy {
   // --- Granular Reverse Geocoding & High-Accuracy Geolocation ---
   formatGranularLocation(a: any): string {
     if (!a) return 'Bangalore';
-    // Priority hierarchy: suburb > neighbourhood > town > village
+    const cityName = a.city || a.town || a.city_district || a.municipality || '';
     const locality =
       a.suburb ||
       a.neighbourhood ||
-      a.town ||
-      a.village ||
       a.quarter ||
       a.residential ||
+      a.village ||
       a.hamlet ||
-      a.city_district ||
       a.subdistrict ||
       a.borough ||
       '';
 
-    let district = '';
-    if (locality && a.city && a.city.toLowerCase() !== locality.toLowerCase()) {
-      district = a.city;
-    } else {
-      district =
-        a.state_district ||
-        a.county ||
-        a.district ||
-        a.state ||
-        '';
-    }
-
-    if (
-      locality &&
-      district &&
-      locality.toLowerCase() !== district.toLowerCase() &&
-      !district.toLowerCase().includes(locality.toLowerCase()) &&
-      !locality.toLowerCase().includes(district.toLowerCase())
-    ) {
-      return `${locality}, ${district}`;
+    if (locality && cityName && locality.toLowerCase() !== cityName.toLowerCase()) {
+      return `${locality}, ${cityName}`;
     } else if (locality) {
-      return locality;
-    } else if (district) {
-      return district;
-    } else if (a.city) {
-      return a.city;
+      const region = a.state_district || a.county || a.state || '';
+      return region ? `${locality}, ${region}` : locality;
+    } else if (cityName) {
+      return cityName;
     }
-    return 'Bangalore';
+    return a.county || a.state_district || a.state || 'Bangalore';
   }
 
   detectGPSLocation() {

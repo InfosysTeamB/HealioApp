@@ -3,7 +3,7 @@
   inset: 0;
   background: rgba(15, 23, 42, 0.45);
   backdrop-filter: blur(4px);
-  z-index: 500;
+  z-index: 1050;
   display: flex;
   justify-content: center;
   align-items: flex-end;
@@ -121,6 +121,16 @@
 
 .search-action-btn:hover {
   background: #057A55;
+}
+
+.loc-search-error {
+  color: #DC2626;
+  background: #FEE2E2;
+  border: 1px solid #FECACA;
+  border-radius: 8px;
+  padding: 0.45rem 0.8rem;
+  font-size: 0.8rem;
+  margin-bottom: 0.75rem;
 }
 
 .gps-btn {

@@ -39,10 +39,17 @@
         class="search-action-btn" 
         type="button" 
         (click)="searchAddress()"
+        [disabled]="isSearching()"
         aria-label="Search for entered address">
-        Search
+        {{ isSearching() ? 'Searching...' : 'Search' }}
       </button>
     </div>
+
+    @if (searchError()) {
+      <div class="loc-search-error" role="alert">
+        {{ searchError() }}
+      </div>
+    }
 
     <button 
       class="gps-btn" 
@@ -62,7 +69,7 @@
 
     <div class="map-wrapper" role="region" aria-label="Interactive map for location pin selection">
       <div #mapContainer class="leaflet-canvas"></div>
-      <span class="map-tip">Drag the pin to adjust exact spot</span>
+      <span class="map-tip">Click map or drag pin to adjust exact spot</span>
     </div>
 
     <div class="selected-details">

@@ -587,7 +587,12 @@
 
   <!-- Embedded Interactive Map Modal -->
   @if (isLocationModalOpen()) {
-  <app-location-modal (locationSelected)="onLocationConfirmed($event)" (close)="isLocationModalOpen.set(false)">
+  <app-location-modal 
+    [initialCity]="selectedCity()"
+    [initialLat]="userCoordinates().lat"
+    [initialLng]="userCoordinates().lng"
+    (locationSelected)="onLocationConfirmed($event)" 
+    (close)="isLocationModalOpen.set(false)">
   </app-location-modal>
   }
 

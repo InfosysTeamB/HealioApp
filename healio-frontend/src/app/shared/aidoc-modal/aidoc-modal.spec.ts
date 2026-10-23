@@ -1,16 +1,16 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { AidocModal } from './aidoc-modal';
+import { AidocModalComponent } from './aidoc-modal';
 
-describe('AidocModal', () => {
-  let component: AidocModal;
-  let fixture: ComponentFixture<AidocModal>;
+describe('AidocModalComponent', () => {
+  let component: AidocModalComponent;
+  let fixture: ComponentFixture<AidocModalComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [AidocModal],
+      imports: [AidocModalComponent],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(AidocModal);
+    fixture = TestBed.createComponent(AidocModalComponent);
     component = fixture.componentInstance;
     await fixture.whenStable();
   });

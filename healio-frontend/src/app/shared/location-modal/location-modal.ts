@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output, OnInit, OnDestroy, signal, ElementRef, ViewChild, AfterViewInit } from '@angular/core';
+import { Component, EventEmitter, Input, Output, OnInit, OnDestroy, signal, ElementRef, ViewChild, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import * as L from 'leaflet';
@@ -11,6 +11,10 @@ import * as L from 'leaflet';
   styleUrl: './location-modal.css'    
 })
 export class LocationModalComponent implements OnInit, AfterViewInit, OnDestroy {
+  @Input() initialCity?: string;
+  @Input() initialLat?: number;
+  @Input() initialLng?: number;
+
   @Output() locationSelected = new EventEmitter<{ city: string; address: string; lat: number; lng: number }>();
   @Output() close = new EventEmitter<void>();
 
@@ -19,15 +23,26 @@ export class LocationModalComponent implements OnInit, AfterViewInit, OnDestroy 
   private map?: L.Map;
   private marker?: L.Marker;
 
-  searchQuery = signal<string>('');
+  searchQuery: string = '';
   selectedCityName = signal<string>('Bangalore');
-  selectedAddress = signal<string>('Drag marker or search above');
+  selectedAddress = signal<string>('Drag marker, click map, or search above');
   isLocating = signal<boolean>(false);
+  isSearching = signal<boolean>(false);
+  searchError = signal<string | null>(null);
 
   currentLat = 12.9716;
   currentLng = 77.5946;
 
   ngOnInit() {
+    if (this.initialLat !== undefined && !isNaN(this.initialLat) && this.initialLng !== undefined && !isNaN(this.initialLng)) {
+      this.currentLat = this.initialLat;
+      this.currentLng = this.initialLng;
+    }
+    if (this.initialCity) {
+      this.selectedCityName.set(this.initialCity);
+      this.selectedAddress.set(this.initialCity);
+    }
+
     const iconDefault = L.icon({
       iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
       iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
@@ -41,7 +56,9 @@ export class LocationModalComponent implements OnInit, AfterViewInit, OnDestroy 
   }
 
   ngAfterViewInit() {
-    setTimeout(() => this.initMap(), 100);
+    setTimeout(() => {
+      this.initMap();
+    }, 120);
   }
 
   private initMap() {
@@ -67,12 +84,26 @@ export class LocationModalComponent implements OnInit, AfterViewInit, OnDestroy 
       this.reverseGeocode(pos.lat, pos.lng);
     });
 
-    this.reverseGeocode(this.currentLat, this.currentLng);
+    this.map.on('click', (e: L.LeafletMouseEvent) => {
+      this.currentLat = e.latlng.lat;
+      this.currentLng = e.latlng.lng;
+      this.marker?.setLatLng(e.latlng);
+      this.reverseGeocode(this.currentLat, this.currentLng);
+    });
+
+    // Invalidate map size once sheet animation completes
+    setTimeout(() => {
+      this.map?.invalidateSize();
+    }, 350);
+
+    if (!this.initialCity || this.selectedAddress() === 'Drag marker, click map, or search above') {
+      this.reverseGeocode(this.currentLat, this.currentLng);
+    }
   }
 
   detectLocation() {
-    if (!navigator.geolocation) {
-      alert('Geolocation not supported by browser.');
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      alert('Geolocation is not supported by your browser.');
       return;
     }
 
@@ -85,12 +116,14 @@ export class LocationModalComponent implements OnInit, AfterViewInit, OnDestroy 
         if (this.map && this.marker) {
           this.map.setView([this.currentLat, this.currentLng], 15);
           this.marker.setLatLng([this.currentLat, this.currentLng]);
+          this.map.invalidateSize();
         }
         this.reverseGeocode(this.currentLat, this.currentLng);
         this.isLocating.set(false);
       },
-      () => {
-        alert('Could not retrieve GPS location.');
+      (err) => {
+        console.warn('Geolocation error:', err);
+        alert('Could not retrieve GPS location. Please check browser permissions or select on map.');
         this.isLocating.set(false);
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
@@ -98,73 +131,68 @@ export class LocationModalComponent implements OnInit, AfterViewInit, OnDestroy 
   }
 
   async searchAddress() {
-    const q = this.searchQuery().trim();
+    const q = (this.searchQuery || '').trim();
     if (!q) return;
 
+    this.isSearching.set(true);
+    this.searchError.set(null);
+
     try {
-      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}`);
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=5&q=${encodeURIComponent(q)}`);
+      if (!res.ok) throw new Error('Search HTTP status ' + res.status);
       const data = await res.json();
       if (data && data.length > 0) {
         this.currentLat = parseFloat(data[0].lat);
         this.currentLng = parseFloat(data[0].lon);
 
         if (this.map && this.marker) {
-          this.map.setView([this.currentLat, this.currentLng], 15);
+          this.map.setView([this.currentLat, this.currentLng], 14);
           this.marker.setLatLng([this.currentLat, this.currentLng]);
+          this.map.invalidateSize();
         }
-        this.reverseGeocode(this.currentLat, this.currentLng);
+        const { label, display } = this.formatGranularAddress(data[0]);
+        this.selectedCityName.set(label);
+        this.selectedAddress.set(display);
+      } else {
+        this.searchError.set('Location not found. Try searching another landmark or click on the map.');
       }
     } catch (e) {
-      console.error('Search error:', e);
+      console.warn('Search error:', e);
+      this.searchError.set('Could not fetch address. Please move the pin on the map.');
+    } finally {
+      this.isSearching.set(false);
     }
   }
 
   private formatGranularAddress(data: any): { label: string; display: string } {
     if (!data || !data.address) {
-      return { label: 'Bangalore', display: 'Selected Location' };
+      const fallbackDisplay = data?.display_name ? (data.display_name as string).split(',').slice(0, 3).join(',') : 'Selected Location';
+      return { label: 'Bangalore', display: fallbackDisplay };
     }
     const a = data.address;
-    // Priority hierarchy: suburb > neighbourhood > town > village
+
+    const cityName = a.city || a.town || a.city_district || a.municipality || '';
     const locality =
       a.suburb ||
       a.neighbourhood ||
-      a.town ||
-      a.village ||
       a.quarter ||
       a.residential ||
+      a.village ||
       a.hamlet ||
-      a.city_district ||
       a.subdistrict ||
       a.borough ||
       '';
 
-    let district = '';
-    if (locality && a.city && a.city.toLowerCase() !== locality.toLowerCase()) {
-      district = a.city;
-    } else {
-      district =
-        a.county ||
-        a.state_district ||
-        a.district ||
-        a.state ||
-        '';
-    }
-
     let label = '';
-    if (
-      locality &&
-      district &&
-      locality.toLowerCase() !== district.toLowerCase() &&
-      !district.toLowerCase().includes(locality.toLowerCase()) &&
-      !locality.toLowerCase().includes(district.toLowerCase())
-    ) {
-      label = `${locality}, ${district}`;
+    if (locality && cityName && locality.toLowerCase() !== cityName.toLowerCase()) {
+      label = `${locality}, ${cityName}`;
     } else if (locality) {
-      label = locality;
-    } else if (district) {
-      label = district;
+      const region = a.state_district || a.county || a.state || '';
+      label = region ? `${locality}, ${region}` : locality;
+    } else if (cityName) {
+      label = cityName;
     } else {
-      label = 'Bangalore';
+      label = a.county || a.state_district || a.state || 'Selected Area';
     }
 
     const display = (data.display_name || '').split(',').slice(0, 3).join(',');
@@ -173,17 +201,20 @@ export class LocationModalComponent implements OnInit, AfterViewInit, OnDestroy 
 
   private async reverseGeocode(lat: number, lng: number) {
     try {
-      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
+      if (!res.ok) throw new Error('Reverse geocode HTTP status ' + res.status);
       const data = await res.json();
       if (data && data.address) {
         const { label, display } = this.formatGranularAddress(data);
         this.selectedCityName.set(label);
         this.selectedAddress.set(display);
+        return;
       }
-    } catch {
-      this.selectedCityName.set('Selected Area');
-      this.selectedAddress.set(`${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+    } catch (e) {
+      console.warn('Reverse geocode error:', e);
     }
+    this.selectedCityName.set('Selected Area');
+    this.selectedAddress.set(`${lat.toFixed(4)}° N, ${lng.toFixed(4)}° E`);
   }
 
   confirm() {
